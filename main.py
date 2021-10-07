@@ -1,4 +1,5 @@
 import sqlite3
+import datetime
 
 class Database:
 
@@ -17,80 +18,150 @@ class Database:
             except Exception as error:
                 print(error)
                 return error
-    
+
             finally:
                 file.commit()
                 return cursor.fetchall()
 
+    @staticmethod
+    def create_record(table,record):
+        error = Database.query("INSERT INTO customer VALUES(?" + ',?' * (len(record)-1) +")",[*record])
+        record.setID(Database.query(f"SELECT ID FROM {table} ")[-1][0])
+        return error
+
+    @staticmethod
+    def delete_record(table,record):
+        Database.query(f"DELETE FROM {table} WHERE ID == {record.getID()}")
+
+    @staticmethod
+    def update_record(table,ID,column,value):
+
+        query = f"UPDATE {table} SET {column} = {value} WHERE ID == {ID}"
+        print(query)
+        return Database.query(f"UPDATE {table} SET {column} = {value} WHERE ID = {ID}")
 
 
 class Customer:
+    """
+     A class to represent a person.
 
+    Attributes
+    ----------
+    customer_ID : int
+        primary key of customer object in database
+    name : str
+        full name of the person
+    email : str
+        email of person, should be unique and follow regex
+    username : str
+        username of pserson , should be unique
+    password : str
+        saved password of persond
+    creditcard : int
+        creditcard information , should be unique
+
+    Methods
+    -------
+    getters and setters for each attribute
+    """
     def __init__(self,*attributes):
-        self.__customer_ID , \
+        attributes = attributes[0] if len(attributes) == 1 else attributes
+
+        self.__ID , x = (attributes[0] , 1) if len(attributes) == 6 else (None ,0)
         self.__name, \
         self.__email, \
+        self.__username, \
         self.__password, \
-        self.__creditcard = attributes
+        self.__creditcard = attributes[x:]
 
-    def getCustomer_ID(self):
-        return self.__customer_ID
+    def getID(self):
+        return self.__ID
     def getName(self):
         return self.__name
     def getEmail(self):
         return self.__email
+    def getUsername(self):
+        return self.__username
     def getPassword(self):
         return self.__password
     def getCreditcard(self):
         return self.__creditcard
 
+    def setID(self,ID):
+        self.__ID = ID
+
     def setName(self,name):
         self.__name = name
-        self.__update_record('name',name)
+        Database.update_record('customer',self.__ID,'name',name)
 
     def setEmail(self,email):
         self.__email = email
-        return self.__update_record('email', email)
+        return Database.update_record('customer',self.__ID,'email',email)
+
+    def setUsername(self,username):
+        self.__username = username
+        return Database.update_record('customer',self.__ID,'username',username)
 
     def setPassword(self,password):
         self.__password = password
-        self.__update_record('password', password)
+        Database.update_record('customer',self.__ID,'password',password)
 
     def setCreditcard(self,creditcard):
         self.__name = creditcard
-        return self.__update_record('creditcard', creditcard)
+        return Database.update_record('customer',self.__ID,'creditcard',creditcard)
 
-    def create_record(self):
-        error = Database.query(f"INSERT INTO customer VALUES(?,?,?,?,?)" ,
-        [self.__customer_ID , self.__name, self.__email, self.__password, self.__creditcard])
+    def __len__(self):
+        return len((self.__ID, self.__name, self.__email,self.__username,self.__password,self.__creditcard))
 
-        self.__customer_ID  = Database.query(f"SELECT customer_ID FROM customer WHERE email == '{self.__email}'")[0][0]
-
-        return error
-
-    def delete_record(self):
-        Database.query(f"DELETE FROM customer WHERE customer_ID == {self.__customer_ID}")
-
-    def __update_record(self,column,value):
-        return Database.query(f"UPDATE customer SET '{column}' = '{value}' WHERE customer_ID == {self.__customer_ID}")
+    def __iter__(self):
+        return iter((self.__ID, self.__name, self.__email,self.__username,self.__password,self.__creditcard))
 
     def __str__(self):
-        return f"{self.__customer_ID , self.__name, self.__email, self.__password, self.__creditcard}"
+        return f"{self.__ID , self.__name, self.__email, self.__username,self.__password, self.__creditcard}"
+
+c = Customer(28,1,1,1,1,1)
+c.setName("david")
+
 
 
 class Reservation:
+    """
+       A class to represent a reservation.
 
+      Attributes
+      ----------
+      reservation_ID : int
+          primary key of reservation object in database
+      customer_ID : int
+          foreign key of reservation object in database mapped to customer object
+      startdate: datetime
+          startdate of reservation
+      endate: datetime
+
+      totalfees: float
+
+      password : str
+          saved password of persond
+      creditcard : int
+          creditcard information , should be unique
+
+      Methods
+      -------
+      getters and setters for each attribute except customer_ID
+      """
     def __init__(self,*attributes):
-        self.__reservation_ID, \
+        attributes = attributes[0] if len(attributes) == 1 else attributes
+
+        self.__ID , x = (attributes[0] , 1) if len(attributes) == 6 else (None ,0)
         self.__customer_ID, \
         self.__startdate, \
         self.__enddate,\
         self.__totalfees, \
         self.__isCheckedin ,\
-        self.__period   = attributes
+        self.__period   = attributes[x:]
 
-    def getReservation_ID(self):
-        return self.__reservation_ID
+    def getID(self):
+        return self.__ID
     def getCustomer_ID(self):
         return self.__customer_ID
     def getStartdate(self):
@@ -117,18 +188,8 @@ class Reservation:
     def setPeriod(self,period):
         self.__period = period
 
-    def create_record(self,customer_ID):
-        error = Database.query(f"INSERT INTO customer VALUES(?,?,?,?,?,?,?)",
-        [self.__reservation_ID,self.__customer_ID,self.__startdate,self.__enddate,self.__totalfees,self.__isCheckedin ,self.__period])
 
-        self.__reservation_ID = Database.query(f"SELECT reservation_ID FROM reservations WHERE customer_ID == '{customer_ID}' ")[-1][0]
-        return error
-
-    def delete_record(self):
-        Database.query(f"DELETE FROM reservations WHERE reservation_ID == {self.__reservation_ID}")
-
-
-class Pre_paid(Reservation):
+class Prepaid(Reservation):
 
      def  __init__(self,*attributes):
         Reservation.__init__(*attributes)
@@ -152,3 +213,26 @@ class Conventional(Reservation):
 class Incentive(Reservation):
     def __init__(self, *attributes):
         Reservation.__init__(*attributes)
+
+
+class Calender:
+
+    __global_calender = {}
+
+    def __init__(self,*attributes):
+        attributes = attributes[0] if len(attributes) == 1 else attributes
+
+        self.ID, x = (attributes[0], 1) if len(attributes) == 6 else (None, 0)
+        self.__reservation_ID , \
+        self.__date , \
+        self.__rate = attributes[x:]
+
+    def validate_period(self,reservation_ID,start,end):
+        pass
+
+    @staticmethod
+    def __setitem__(self, key, value):
+        Calender.__global_calender[key] = value
+
+    def __getitem__(self, item):
+        return Calender.__global_calender[item]
