@@ -3,6 +3,34 @@ import datetime
 
 class Database:
 
+    """
+     A class that represents the database.
+
+    Methods
+    --------------------------------------------------------------
+    query() - makes general SQL query
+        @:param
+            query : str
+        @:return
+            cursor.fetchall() : list (list ( data....) )
+
+
+    load_record() - recontructs objects and returns them from database
+        @:param
+            record : object
+        @:return
+            [constructor(*attributes) for attributes in Database.query(query)] : list ( object ... )
+
+
+    delete_record() - removes record from database
+        @:param
+            record : object
+
+
+    save_record() - decontructs object and new writes data in database
+        @:param
+            record : object
+    """
     @staticmethod
     def query(query,values = None):
 
@@ -29,19 +57,15 @@ class Database:
         return [constructor(*attributes) for attributes in Database.query(query)]
 
     @staticmethod
-    def create_record(record):
-        error = Database.query(f"INSERT INTO {record.table} VALUES(?" + ',?' * (len(record)-1) +")",[*record])
-        record.setID(Database.query(f"SELECT ID FROM {record.table} ")[-1][0])
-        return error
-
-    @staticmethod
     def delete_record(record):
         Database.query(f"DELETE FROM {record.table} WHERE ID == {record.getID()}")
 
     @staticmethod
-    def update_record(record):
+    def save_record(record):
         Database.delete_record(record)
-        return Database.create_record(record)
+        error = Database.query(f"INSERT INTO {record.table} VALUES(?" + ',?' * (len(record) - 1) + ")", [*record])
+        record.setID(Database.query(f"SELECT ID FROM {record.table} ")[-1][0])
+        return error
 
 class Customer:
     """
@@ -70,10 +94,10 @@ class Customer:
     def __init__(self,*attributes):
 
         self.__ID , \
-        self.__name, \
-        self.__email, \
-        self.__username, \
-        self.__password, \
+        self.__name , \
+        self.__email , \
+        self.__username , \
+        self.__password , \
         self.__creditcard = attributes
 
 
@@ -133,7 +157,7 @@ class Reservation:
       startdate: datetime
           startdate of reservation
       endate: datetime
-           enddate of reservatiion
+           enddate of reservation
       totalfees: float
            total amout of accumulated charges
       ischeckedin : bool
@@ -142,25 +166,30 @@ class Reservation:
           current room number
       type : str
           type of reservation
-
+      TIMEPERIOD : dict
+          a dictonary reprsenting all days and there values
 
       Methods
        --------------------------------------------------------------
-      getters and setters for each attribute except customer_ID
+       getters and setters for each attribute
+
+       load_period() - gets time period data from database
+       save_period() - saves all time period into database
+       delete_period() - removes all time period data from database
       """
 
     table = 'reservations'
-    def __init__(self,*attributes):
-        self.__ID , \
-        self.__customer_ID, \
-        self.__startdate, \
-        self.__enddate,\
-        self.__totalfees, \
-        self.__isCheckedin, \
-        self.__roomnumber, \
-        self.__type =  attributes
+    def __init__(self,*attributes,TIME_PERIOD = None):
+        self.__ID  , \
+        self.__customer_ID , \
+        self.__startdate , \
+        self.__enddate , \
+        self.__totalfees , \
+        self.__isCheckedin , \
+        self.__roomnumber , \
+        self.__type = attributes
 
-        self.__period = {}
+        self.TIME_PERIOD = TIME_PERIOD
 
 
     def getID(self):
@@ -200,28 +229,21 @@ class Reservation:
     def load_period(self):
         for day in Database.query(f"SELECT * FROM periods WHERE reservation_ID == '{self.__ID}'"):
             reservation_ID, date , rate = day
-            self.__period[date] = [reservation_ID, rate]
-        return self.__period
-
-    def create_period(self,newperiod):
-
-        for day in newperiod:
-            newperiod[day][0] = self.__ID
-
-        self.__period = newperiod
-        for day in newperiod:
-            date = day
-            reservation_ID =  newperiod[day][0]
-            rate =  newperiod[day][1]
-            Database.query("INSERT INTO periods VALUES(?,?,?)", [reservation_ID,date,rate])
-
+            self.TIME_PERIOD[date] = [reservation_ID, rate]
 
     def delete_period(self):
         Database.query(f"DELETE FROM periods WHERE reservation_ID == '{self.__ID}")
 
-    def update_period(self):
+    def save_period(self):
         self.delete_period()
-        self.create_period(self.__period)
+        for day in self.TIME_PERIOD:
+            self.TIME_PERIOD[day][0] = self.__ID
+
+        for day in self.TIME_PERIOD:
+            date = day
+            reservation_ID = self.TIME_PERIOD[day][0]
+            rate = self.TIME_PERIOD[day][1]
+            Database.query("INSERT INTO periods VALUES(?,?,?)", [reservation_ID, date, rate])
 
 
     def __len__(self):
@@ -244,9 +266,9 @@ class Reservation:
                f"room number: {self.__roomnumber} \n" \
                f"type: {self.__type} \n"
 
-class Managment:
+class Internal_Calender:
     """
-           A class to represent the internal Management.
+           A class to represent the internal calender.
 
           Attributes
           --------------------------------------------------------------
@@ -256,8 +278,7 @@ class Managment:
 
           Methods
           --------------------------------------------------------------
-
-          room_avalibility()  -
+          booking()  -
              @:param
                 period : dict
                 remove : bool
@@ -269,85 +290,85 @@ class Managment:
                all(Calender.get(day.getDate())[1] != 0 for day in period) : bool
 
           load_calender() - gets calender data from database
-              @:return
-                    Managment.__calender : dict
-
-          create_calender() - writes all calender data into database
-          update_calender() - updates all calender data in database
+          save_calender() - updates all calender data in database
           delete_calender() - removes all calender data from database
+          show() - displays calender contents
 
           """
-    __calender = {}
+    CALENDER = {}
 
     @staticmethod
-    def room(period,*,remove = False ):
-         x = -1 if not remove else 1
+    def booking(period,*,REMOVE = False ):
+         x = -1 if not REMOVE else 1
          for day in period:
-            Managment.__calender[day][1] += x
+            Internal_Calender.CALENDER[day][1] += x
 
     @staticmethod
     def is_valid(period):
-        return all(Managment.__calender[day][1] != 0 for day in period)
+        return all(Internal_Calender.CALENDER[day][1] != 0 for day in period)
 
     @staticmethod
     def load_calender():
         for day in Database.query("SELECT * FROM calender"):
             date ,baserate , rooms = day
-            Managment.__calender[date] = [baserate,rooms]
-        return Managment.__calender
-
-    @staticmethod
-    def create_calender(new_calender):
-        Managment.__calender = new_calender
-        for day in new_calender:
-            date = day
-            baserate = new_calender[day][0]
-            rooms = new_calender[day][1]
-            Database.query("INSERT INTO calender VALUES(?,?,?)",[date,baserate,rooms])
+            Internal_Calender.CALENDER[date] = [baserate, rooms]
 
     @staticmethod
     def delete_calender():
         Database.query("DELETE FROM calender")
 
     @staticmethod
-    def update_calender():
-        Managment.delete_calender()
-        Managment.create_calender(Managment.__calender)
+    def save_calender():
+        Internal_Calender.delete_calender()
+        for day in Internal_Calender.CALENDER:
+            date = day
+            baserate = Internal_Calender.CALENDER[day][0]
+            rooms =Internal_Calender.CALENDER[day][1]
+            Database.query("INSERT INTO calender VALUES(?,?,?)", [date, baserate, rooms])
 
     @staticmethod
     def show(self):
-        for day in Managment.__calender:
+        for day in Internal_Calender.CALENDER:
             date = day
-            baserate = Managment.__calender[day][0]
-            rooms = Managment.__calender[day][1]
+            baserate = Internal_Calender.CALENDER[day][0]
+            rooms = Internal_Calender.CALENDER[day][1]
             print(f"date: {date} , base rate: {baserate} , rooms avaliable: {rooms}")
+
 
 #todo
 class Prepaid(Reservation):
 
-     def  __init__(self,*attributes):
-        Reservation.__init__(self,*attributes)
+     def  __init__(self,*attributes,TIME_PERIOD = None):
+        Reservation.__init__(self,*attributes,TIME_PERIOD = TIME_PERIOD)
 
-     def is_valid(self,period):
-        return Managment.is_valid(period)
+     def is_valid(self):
+        return all((Internal_Calender.is_valid(self.TIME_PERIOD),
+                    "?"
+                    "?"
+                    "?"
+                    "?"
+                    "?"
+                    "???"))
+
+
 #todo
 class Sixty_days_in_advance(Reservation):
 
-    def __init__(self, *attributes):
-        Reservation.__init__(*attributes)
+    def __init__(self,*attributes,TIME_PERIOD = None):
+        Reservation.__init__(self,*attributes,TIME_PERIOD = TIME_PERIOD)
 
 
 #todo
 class Conventional(Reservation):
 
-    def __init__(self, *attributes):
-        Reservation.__init__(*attributes)
+    def __init__(self,*attributes,TIME_PERIOD = None):
+        Reservation.__init__(self,*attributes,TIME_PERIOD = TIME_PERIOD)
 
 
 #todo
 class Incentive(Reservation):
-    def __init__(self, *attributes):
-        Reservation.__init__(*attributes)
+    def __init__(self,*attributes,TIME_PERIOD = None):
+        Reservation.__init__(self,*attributes,TIME_PERIOD = TIME_PERIOD)
 
 
 
