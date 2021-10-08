@@ -23,30 +23,32 @@ class Database:
                 file.commit()
                 return cursor.fetchall()
 
+
     @staticmethod
-    def create_record(table,record):
-        error = Database.query("INSERT INTO customer VALUES(?" + ',?' * (len(record)-1) +")",[*record])
-        record.setID(Database.query(f"SELECT ID FROM {table} ")[-1][0])
+    def load_record(constructor, query):
+        return [constructor(*attributes) for attributes in Database.query(query)]
+
+    @staticmethod
+    def create_record(record):
+        error = Database.query(f"INSERT INTO {record.table} VALUES(?" + ',?' * (len(record)-1) +")",[*record])
+        record.setID(Database.query(f"SELECT ID FROM {record.table} ")[-1][0])
         return error
 
     @staticmethod
-    def delete_record(table,record):
-        Database.query(f"DELETE FROM {table} WHERE ID == {record.getID()}")
+    def delete_record(record):
+        Database.query(f"DELETE FROM {record.table} WHERE ID == {record.getID()}")
 
     @staticmethod
-    def update_record(table,ID,column,value):
-
-        query = f"UPDATE {table} SET {column} = {value} WHERE ID == {ID}"
-        print(query)
-        return Database.query(f"UPDATE {table} SET {column} = {value} WHERE ID = {ID}")
-
+    def update_record(record):
+        Database.delete_record(record)
+        return Database.create_record(record)
 
 class Customer:
     """
      A class to represent a person.
 
     Attributes
-    ----------
+     --------------------------------------------------------------
     customer_ID : int
         primary key of customer object in database
     name : str
@@ -54,25 +56,26 @@ class Customer:
     email : str
         email of person, should be unique and follow regex
     username : str
-        username of pserson , should be unique
+        username of person , should be unique
     password : str
         saved password of persond
     creditcard : int
         creditcard information , should be unique
 
     Methods
-    -------
+    --------------------------------------------------------------
     getters and setters for each attribute
     """
+    table = 'customer'
     def __init__(self,*attributes):
-        attributes = attributes[0] if len(attributes) == 1 else attributes
 
-        self.__ID , x = (attributes[0] , 1) if len(attributes) == 6 else (None ,0)
+        self.__ID , \
         self.__name, \
         self.__email, \
         self.__username, \
         self.__password, \
-        self.__creditcard = attributes[x:]
+        self.__creditcard = attributes
+
 
     def getID(self):
         return self.__ID
@@ -89,76 +92,76 @@ class Customer:
 
     def setID(self,ID):
         self.__ID = ID
-
     def setName(self,name):
         self.__name = name
-        Database.update_record('customer',self.__ID,'name',name)
-
     def setEmail(self,email):
         self.__email = email
-        return Database.update_record('customer',self.__ID,'email',email)
-
     def setUsername(self,username):
         self.__username = username
-        return Database.update_record('customer',self.__ID,'username',username)
-
     def setPassword(self,password):
         self.__password = password
-        Database.update_record('customer',self.__ID,'password',password)
-
     def setCreditcard(self,creditcard):
-        self.__name = creditcard
-        return Database.update_record('customer',self.__ID,'creditcard',creditcard)
+        self.__creditcard = creditcard
+
 
     def __len__(self):
-        return len((self.__ID, self.__name, self.__email,self.__username,self.__password,self.__creditcard))
+        return len((self.__ID, self.__name, self.__email,
+                    self.__username,self.__password,self.__creditcard))
 
     def __iter__(self):
-        return iter((self.__ID, self.__name, self.__email,self.__username,self.__password,self.__creditcard))
+        return iter((self.__ID, self.__name, self.__email,
+                     self.__username,self.__password,self.__creditcard))
 
     def __str__(self):
-        return f"{self.__ID , self.__name, self.__email, self.__username,self.__password, self.__creditcard}"
-
-c = Customer(28,1,1,1,1,1)
-c.setName("david")
-
-
+        return f"primary key: {self.__ID} \n" \
+               f"name: {self.__name} \n" \
+               f"email: {self.__email} \n" \
+               f"username: {self.__username} \n" \
+               f"password: {self.__password} \n" \
+               f"credit card: {self.__creditcard} \n " \
 
 class Reservation:
     """
-       A class to represent a reservation.
+       A Super class to represent a reservation.
 
       Attributes
-      ----------
-      reservation_ID : int
+       --------------------------------------------------------------
+      ID : int
           primary key of reservation object in database
       customer_ID : int
           foreign key of reservation object in database mapped to customer object
       startdate: datetime
           startdate of reservation
       endate: datetime
-
+           enddate of reservatiion
       totalfees: float
+           total amout of accumulated charges
+      ischeckedin : bool
+          true or false if person is occuping this reservation
+      roomnumber : int
+          current room number
+      type : str
+          type of reservation
 
-      password : str
-          saved password of persond
-      creditcard : int
-          creditcard information , should be unique
 
       Methods
-      -------
+       --------------------------------------------------------------
       getters and setters for each attribute except customer_ID
       """
-    def __init__(self,*attributes):
-        attributes = attributes[0] if len(attributes) == 1 else attributes
 
-        self.__ID , x = (attributes[0] , 1) if len(attributes) == 6 else (None ,0)
+    table = 'reservations'
+    def __init__(self,*attributes):
+        self.__ID , \
         self.__customer_ID, \
         self.__startdate, \
         self.__enddate,\
         self.__totalfees, \
-        self.__isCheckedin ,\
-        self.__period   = attributes[x:]
+        self.__isCheckedin, \
+        self.__roomnumber, \
+        self.__type =  attributes
+
+        self.__period = {}
+
 
     def getID(self):
         return self.__ID
@@ -172,9 +175,13 @@ class Reservation:
         return self.__totalfees
     def isCheckedin(self):
         return self.__isCheckedin
-    def getPeriod(self):
-        return self.__period
+    def getRoomnumber(self):
+        return self.__roomnumber
+    def getType(self):
+        return self.__type
 
+    def setID(self,ID):
+        self.__ID = ID
     def setCustomer_ID(self,customer_ID):
         self.__customer_ID = customer_ID
     def setStartdate(self,startdate):
@@ -185,54 +192,165 @@ class Reservation:
         self.__totalfees = totalfees
     def setCheckin(self,isCheckedin):
         self.__isCheckedin = isCheckedin
-    def setPeriod(self,period):
-        self.__period = period
+    def setRoomnumber(self,roomnumber):
+        self.__roomnumber = roomnumber
+    def setType(self,Type):
+        self.__type = Type
+
+    def load_period(self):
+        for day in Database.query(f"SELECT * FROM periods WHERE reservation_ID == '{self.__ID}'"):
+            reservation_ID, date , rate = day
+            self.__period[date] = [reservation_ID, rate]
+        return self.__period
+
+    def create_period(self,newperiod):
+
+        for day in newperiod:
+            newperiod[day][0] = self.__ID
+
+        self.__period = newperiod
+        for day in newperiod:
+            date = day
+            reservation_ID =  newperiod[day][0]
+            rate =  newperiod[day][1]
+            Database.query("INSERT INTO periods VALUES(?,?,?)", [reservation_ID,date,rate])
 
 
+    def delete_period(self):
+        Database.query(f"DELETE FROM periods WHERE reservation_ID == '{self.__ID}")
+
+    def update_period(self):
+        self.delete_period()
+        self.create_period(self.__period)
+
+
+    def __len__(self):
+        return len((self.__ID, self.__customer_ID, self.__startdate, self.__enddate,
+                        self.__totalfees, self.__isCheckedin, self.__roomnumber,
+                        self.__type))
+
+    def __iter__(self):
+        return iter((self.__ID, self.__customer_ID, self.__startdate, self.__enddate,
+                         self.__totalfees, self.__isCheckedin, self.__roomnumber,
+                         self.__type))
+
+    def __str__(self):
+        return f"primary key: {self.__ID} \n" \
+               f"foreign key: {self.__customer_ID} \n" \
+               f"start date: {self.__startdate} \n" \
+               f"end date: {self.__enddate} \n" \
+               f"total charges: ${format(self.__totalfees,',.2f')} \n" \
+               f"checked in: {self.__isCheckedin} \n" \
+               f"room number: {self.__roomnumber} \n" \
+               f"type: {self.__type} \n"
+
+class Managment:
+    """
+           A class to represent the internal Management.
+
+          Attributes
+          --------------------------------------------------------------
+
+          global_calender: dict
+              a collection of datetime and baserate/room avalibity pairs
+
+          Methods
+          --------------------------------------------------------------
+
+          room_avalibility()  -
+             @:param
+                period : dict
+                remove : bool
+
+          is_valid()  - determines if period can be made (subject to avalibility)
+             @:param
+                period : ( Day , Day , Day ... )
+             @:return
+               all(Calender.get(day.getDate())[1] != 0 for day in period) : bool
+
+          load_calender() - gets calender data from database
+              @:return
+                    Managment.__calender : dict
+
+          create_calender() - writes all calender data into database
+          update_calender() - updates all calender data in database
+          delete_calender() - removes all calender data from database
+
+          """
+    __calender = {}
+
+    @staticmethod
+    def room(period,*,remove = False ):
+         x = -1 if not remove else 1
+         for day in period:
+            Managment.__calender[day][1] += x
+
+    @staticmethod
+    def is_valid(period):
+        return all(Managment.__calender[day][1] != 0 for day in period)
+
+    @staticmethod
+    def load_calender():
+        for day in Database.query("SELECT * FROM calender"):
+            date ,baserate , rooms = day
+            Managment.__calender[date] = [baserate,rooms]
+        return Managment.__calender
+
+    @staticmethod
+    def create_calender(new_calender):
+        Managment.__calender = new_calender
+        for day in new_calender:
+            date = day
+            baserate = new_calender[day][0]
+            rooms = new_calender[day][1]
+            Database.query("INSERT INTO calender VALUES(?,?,?)",[date,baserate,rooms])
+
+    @staticmethod
+    def delete_calender():
+        Database.query("DELETE FROM calender")
+
+    @staticmethod
+    def update_calender():
+        Managment.delete_calender()
+        Managment.create_calender(Managment.__calender)
+
+    @staticmethod
+    def show(self):
+        for day in Managment.__calender:
+            date = day
+            baserate = Managment.__calender[day][0]
+            rooms = Managment.__calender[day][1]
+            print(f"date: {date} , base rate: {baserate} , rooms avaliable: {rooms}")
+
+#todo
 class Prepaid(Reservation):
 
      def  __init__(self,*attributes):
-        Reservation.__init__(*attributes)
+        Reservation.__init__(self,*attributes)
 
-
-
+     def is_valid(self,period):
+        return Managment.is_valid(period)
+#todo
 class Sixty_days_in_advance(Reservation):
 
     def __init__(self, *attributes):
         Reservation.__init__(*attributes)
 
 
-
+#todo
 class Conventional(Reservation):
 
     def __init__(self, *attributes):
         Reservation.__init__(*attributes)
 
 
-
+#todo
 class Incentive(Reservation):
     def __init__(self, *attributes):
         Reservation.__init__(*attributes)
 
 
-class Calender:
 
-    __global_calender = {}
 
-    def __init__(self,*attributes):
-        attributes = attributes[0] if len(attributes) == 1 else attributes
 
-        self.ID, x = (attributes[0], 1) if len(attributes) == 6 else (None, 0)
-        self.__reservation_ID , \
-        self.__date , \
-        self.__rate = attributes[x:]
 
-    def validate_period(self,reservation_ID,start,end):
-        pass
-
-    @staticmethod
-    def __setitem__(self, key, value):
-        Calender.__global_calender[key] = value
-
-    def __getitem__(self, item):
-        return Calender.__global_calender[item]
