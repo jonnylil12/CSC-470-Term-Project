@@ -1,5 +1,6 @@
 import sqlite3
-import datetime
+
+
 
 class Database:
 
@@ -15,19 +16,21 @@ class Database:
             cursor.fetchall() : list (list ( data....) )
 
 
-    load_record() - recontructs objects and returns them from database
+    load_object() - based on query gets attributes and recontructs into a object
+                    constructor parameter should be the class of the object
         @:param
-            record : object
+            query : str
+            constructor : object class
         @:return
             [constructor(*attributes) for attributes in Database.query(query)] : list ( object ... )
 
 
-    delete_record() - removes record from database
+    delete_object() - removes object from database
         @:param
             record : object
 
 
-    save_record() - decontructs object and new writes data in database
+    save_object() - decontructs object and new writes data in database
         @:param
             record : object
     """
@@ -51,19 +54,19 @@ class Database:
                 file.commit()
                 return cursor.fetchall()
 
-
     @staticmethod
-    def load_record(constructor, query):
+    def load_object(query, constructor):
         return [constructor(*attributes) for attributes in Database.query(query)]
 
     @staticmethod
-    def delete_record(record):
+    def delete_object(record):
         Database.query(f"DELETE FROM {record.table} WHERE ID == {record.getID()}")
 
     @staticmethod
-    def save_record(record):
-        Database.delete_record(record)
-        error = Database.query(f"INSERT INTO {record.table} VALUES(?" + ',?' * (len(record) - 1) + ")", [*record])
+    def save_object(record):
+        Database.delete_object(record)
+        error = Database.query(f"INSERT INTO {record.table} VALUES(?" + ',?' * (len(record.__dict__) - 1) + ")",
+                                                                                [*record.__dict__.values()])
         record.setID(Database.query(f"SELECT ID FROM {record.table} ")[-1][0])
         return error
 
@@ -90,16 +93,17 @@ class Customer:
     --------------------------------------------------------------
     getters and setters for each attribute
     """
-    table = 'customer'
-    def __init__(self,*attributes):
 
+    #for database
+    table = 'customer'
+
+    def __init__(self,*attributes):
         self.__ID , \
-        self.__name , \
-        self.__email , \
+        self.__name, \
+        self.__email, \
         self.__username , \
         self.__password , \
         self.__creditcard = attributes
-
 
     def getID(self):
         return self.__ID
@@ -127,22 +131,6 @@ class Customer:
     def setCreditcard(self,creditcard):
         self.__creditcard = creditcard
 
-
-    def __len__(self):
-        return len((self.__ID, self.__name, self.__email,
-                    self.__username,self.__password,self.__creditcard))
-
-    def __iter__(self):
-        return iter((self.__ID, self.__name, self.__email,
-                     self.__username,self.__password,self.__creditcard))
-
-    def __str__(self):
-        return f"primary key: {self.__ID} \n" \
-               f"name: {self.__name} \n" \
-               f"email: {self.__email} \n" \
-               f"username: {self.__username} \n" \
-               f"password: {self.__password} \n" \
-               f"credit card: {self.__creditcard} \n " \
 
 class Reservation:
     """
@@ -178,7 +166,9 @@ class Reservation:
        delete_period() - removes all time period data from database
       """
 
+    # for database
     table = 'reservations'
+
     def __init__(self,*attributes,TIME_PERIOD = None):
         self.__ID  , \
         self.__customer_ID , \
@@ -246,25 +236,6 @@ class Reservation:
             Database.query("INSERT INTO periods VALUES(?,?,?)", [reservation_ID, date, rate])
 
 
-    def __len__(self):
-        return len((self.__ID, self.__customer_ID, self.__startdate, self.__enddate,
-                        self.__totalfees, self.__isCheckedin, self.__roomnumber,
-                        self.__type))
-
-    def __iter__(self):
-        return iter((self.__ID, self.__customer_ID, self.__startdate, self.__enddate,
-                         self.__totalfees, self.__isCheckedin, self.__roomnumber,
-                         self.__type))
-
-    def __str__(self):
-        return f"primary key: {self.__ID} \n" \
-               f"foreign key: {self.__customer_ID} \n" \
-               f"start date: {self.__startdate} \n" \
-               f"end date: {self.__enddate} \n" \
-               f"total charges: ${format(self.__totalfees,',.2f')} \n" \
-               f"checked in: {self.__isCheckedin} \n" \
-               f"room number: {self.__roomnumber} \n" \
-               f"type: {self.__type} \n"
 
 class Internal_Calender:
     """
@@ -289,7 +260,7 @@ class Internal_Calender:
              @:return
                all(Calender.get(day.getDate())[1] != 0 for day in period) : bool
 
-          load_calender() - gets calender data from database
+          query_calender() - gets calender data from database
           save_calender() - updates all calender data in database
           delete_calender() - removes all calender data from database
           show() - displays calender contents
@@ -325,14 +296,6 @@ class Internal_Calender:
             baserate = Internal_Calender.CALENDER[day][0]
             rooms =Internal_Calender.CALENDER[day][1]
             Database.query("INSERT INTO calender VALUES(?,?,?)", [date, baserate, rooms])
-
-    @staticmethod
-    def show(self):
-        for day in Internal_Calender.CALENDER:
-            date = day
-            baserate = Internal_Calender.CALENDER[day][0]
-            rooms = Internal_Calender.CALENDER[day][1]
-            print(f"date: {date} , base rate: {baserate} , rooms avaliable: {rooms}")
 
 
 #todo
