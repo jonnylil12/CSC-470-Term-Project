@@ -1,6 +1,5 @@
 import sqlite3
-
-
+from datetime import datetime, timedelta , date
 
 class Database:
 
@@ -58,16 +57,24 @@ class Database:
     def load_object(query, constructor):
         return [constructor(*attributes) for attributes in Database.query(query)]
 
+
     @staticmethod
     def delete_object(record):
-        Database.query(f"DELETE FROM {record.table} WHERE ID == {record.getID()}")
+        Database.query(f"DELETE FROM {record.table} " + \
+                       f"WHERE ID == {record.getID()}")
 
     @staticmethod
     def save_object(record):
         Database.delete_object(record)
-        error = Database.query(f"INSERT INTO {record.table} VALUES(?" + ',?' * (len(record.__dict__) - 1) + ")",
-                                                                                [*record.__dict__.values()])
-        record.setID(Database.query(f"SELECT ID FROM {record.table} ")[-1][0])
+        error = Database.query(f"INSERT INTO {record.table} " + \
+                               f"VALUES(?" + ',?' * (len(record.__dict__) - 1) + ")",
+                               [*record.__dict__.values()])
+
+        ID = Database.query(f"SELECT ID FROM {record.table} " + \
+                       f"ORDER BY ID DESC " + \
+                       f"LIMIT 1")[0][0]
+
+        record.setID(ID)
         return error
 
 class Customer:
@@ -167,9 +174,9 @@ class Reservation:
       """
 
     # for database
-    table = 'reservations'
+    table = 'reservation'
 
-    def __init__(self,*attributes,TIME_PERIOD = None):
+    def __init__(self,*attributes):
         self.__ID  , \
         self.__customer_ID , \
         self.__startdate , \
@@ -178,9 +185,6 @@ class Reservation:
         self.__isCheckedin , \
         self.__roomnumber , \
         self.__type = attributes
-
-        self.TIME_PERIOD = TIME_PERIOD
-
 
     def getID(self):
         return self.__ID
@@ -216,28 +220,39 @@ class Reservation:
     def setType(self,Type):
         self.__type = Type
 
-    def load_period(self):
-        for day in Database.query(f"SELECT * FROM periods WHERE reservation_ID == '{self.__ID}'"):
-            reservation_ID, date , rate = day
-            self.TIME_PERIOD[date] = [reservation_ID, rate]
+class Rate:
 
-    def delete_period(self):
-        Database.query(f"DELETE FROM periods WHERE reservation_ID == '{self.__ID}")
+    table = "rate"
+    def __init__(self,*attributes):
 
-    def save_period(self):
-        self.delete_period()
-        for day in self.TIME_PERIOD:
-            self.TIME_PERIOD[day][0] = self.__ID
+        self.__ID , \
+        self.__reservation_ID,\
+        self.__date , \
+        self.__rate = attributes
 
-        for day in self.TIME_PERIOD:
-            date = day
-            reservation_ID = self.TIME_PERIOD[day][0]
-            rate = self.TIME_PERIOD[day][1]
-            Database.query("INSERT INTO periods VALUES(?,?,?)", [reservation_ID, date, rate])
+    def getID(self):
+        return self.__ID
+    def getReservation_ID(self):
+        return self.__reservation_ID
+    def getDate(self):
+        return self.__date
+    def getRate(self):
+        return self.__rate
+
+    def setID(self,ID):
+        self.__ID = ID
+    def setReservation_ID(self,reservation_ID):
+        self.__reservation_ID = reservation_ID
+    def setDate(self,date):
+        self.__date = date
+    def setRate(self,rate):
+        self.__rate = rate
 
 
+    def __str__(self):
+        return f"{self.__ID,self.__reservation_ID,self.__date,self.__rate}"
 
-class Internal_Calender:
+class Calender:
     """
            A class to represent the internal calender.
 
@@ -260,29 +275,39 @@ class Internal_Calender:
              @:return
                all(Calender.get(day.getDate())[1] != 0 for day in period) : bool
 
-          query_calender() - gets calender data from database
+          load_calender() - gets calender data from database
           save_calender() - updates all calender data in database
           delete_calender() - removes all calender data from database
-          show() - displays calender contents
 
           """
     CALENDER = {}
 
     @staticmethod
-    def booking(period,*,REMOVE = False ):
+    def booking(time_period,*,REMOVE = False ):
          x = -1 if not REMOVE else 1
-         for day in period:
-            Internal_Calender.CALENDER[day][1] += x
+         for day in time_period:
+            Calender.CALENDER[day.getDate()][1] += x
 
     @staticmethod
-    def is_valid(period):
-        return all(Internal_Calender.CALENDER[day][1] != 0 for day in period)
+    def base_rate(date,baserate = None):
+        if baserate == None:
+            return Calender.CALENDER[date][0]
+        Calender.CALENDER[date] = baserate
+
+    def rooms_are_avaliable(startdate, enddate):
+        current = datetime.strptime(startdate, '%m-%d-%y').date()
+        stop = datetime.strptime(enddate, '%m-%d-%y').date()
+        while current <= stop:
+            if Calender.base_rate(current.strftime("%m-%d-%y")) == 0:
+                return False
+            current += timedelta(days=1)
+        return True
 
     @staticmethod
     def load_calender():
         for day in Database.query("SELECT * FROM calender"):
             date ,baserate , rooms = day
-            Internal_Calender.CALENDER[date] = [baserate, rooms]
+            Calender.CALENDER[date] = [baserate, rooms]
 
     @staticmethod
     def delete_calender():
@@ -290,48 +315,42 @@ class Internal_Calender:
 
     @staticmethod
     def save_calender():
-        Internal_Calender.delete_calender()
-        for day in Internal_Calender.CALENDER:
+        Calender.delete_calender()
+        for day in Calender.CALENDER:
             date = day
-            baserate = Internal_Calender.CALENDER[day][0]
-            rooms =Internal_Calender.CALENDER[day][1]
+            baserate = Calender.CALENDER[day][0]
+            rooms =Calender.CALENDER[day][1]
             Database.query("INSERT INTO calender VALUES(?,?,?)", [date, baserate, rooms])
 
 
 #todo
 class Prepaid(Reservation):
 
-     def  __init__(self,*attributes,TIME_PERIOD = None):
-        Reservation.__init__(self,*attributes,TIME_PERIOD = TIME_PERIOD)
+     def  __init__(self,*attributes):
+        super().__init__(*attributes)
 
      def is_valid(self):
-        return all((Internal_Calender.is_valid(self.TIME_PERIOD),
-                    "?"
-                    "?"
-                    "?"
-                    "?"
-                    "?"
-                    "???"))
+        return Calender.rooms_are_avaliable(self.getStartdate(), self.getEnddate())
 
 
 #todo
 class Sixty_days_in_advance(Reservation):
 
-    def __init__(self,*attributes,TIME_PERIOD = None):
-        Reservation.__init__(self,*attributes,TIME_PERIOD = TIME_PERIOD)
+    def __init__(self,*attributes):
+        super().__init__(*attributes)
 
 
 #todo
 class Conventional(Reservation):
 
-    def __init__(self,*attributes,TIME_PERIOD = None):
-        Reservation.__init__(self,*attributes,TIME_PERIOD = TIME_PERIOD)
+    def __init__(self,*attributes):
+        super().__init__(*attributes)
 
 
 #todo
 class Incentive(Reservation):
-    def __init__(self,*attributes,TIME_PERIOD = None):
-        Reservation.__init__(self,*attributes,TIME_PERIOD = TIME_PERIOD)
+    def __init__(self,*attributes):
+        super().__init__(*attributes)
 
 
 
