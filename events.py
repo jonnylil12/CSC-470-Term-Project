@@ -9,9 +9,9 @@ def yield_dates(startdate,enddate):
 
 def generate_rates(startdate,enddate,ID):
     all_dates = yield_dates(startdate, enddate)
-    all_rates = [Rate(None, ID, date, Calender.base_rate(date)) for date in all_dates]
-    totalfees = sum([rate.getRate() for rate in all_rates])
-    return all_rates , totalfees
+    all_days = [Day(None, ID, date, Calender.getBaserate(date)) for date in all_dates]
+    totalfees = sum([day.getRate() for day in all_days])
+    return all_days , totalfees
 
 def string_to_date_object(string):
     return datetime.strptime(string, "%d-%m-%y").date()

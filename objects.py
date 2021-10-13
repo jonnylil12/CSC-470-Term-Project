@@ -60,19 +60,19 @@ class Database:
 
     @staticmethod
     def delete_object(record):
-        Database.query(f"DELETE FROM {record.table} " + \
+        Database.query(f"DELETE FROM {record.table} " +
                        f"WHERE ID == {record.getID()}")
 
     @staticmethod
     def save_object(record):
         Database.delete_object(record)
-        error = Database.query(f"INSERT INTO {record.table} " + \
+        error = Database.query(f"INSERT INTO {record.table} " +
                                f"VALUES(?" + ',?' * (len(record.__dict__) - 1) + ")",
                                [*record.__dict__.values()])
 
-        ID = Database.query(f"SELECT ID FROM {record.table} " + \
-                       f"ORDER BY ID DESC " + \
-                       f"LIMIT 1")[0][0]
+        ID = Database.query(f"SELECT ID FROM {record.table} " +
+                            f"ORDER BY ID DESC " +
+                            f"LIMIT 1")[0][0]
 
         record.setID(ID)
         return error
@@ -83,7 +83,7 @@ class Customer:
 
     Attributes
      --------------------------------------------------------------
-    customer_ID : int
+    ID : int
         primary key of customer object in database
     name : str
         full name of the person
@@ -138,7 +138,6 @@ class Customer:
     def setCreditcard(self,creditcard):
         self.__creditcard = creditcard
 
-
 class Reservation:
     """
        A Super class to represent a reservation.
@@ -148,10 +147,10 @@ class Reservation:
       ID : int
           primary key of reservation object in database
       customer_ID : int
-          foreign key of reservation object in database mapped to customer object
-      startdate: datetime
+          foreign key of reservation object mapped to customer object in database
+      startdate: str
           startdate of reservation
-      endate: datetime
+      endate: str
            enddate of reservation
       totalfees: float
            total amout of accumulated charges
@@ -220,9 +219,26 @@ class Reservation:
     def setType(self,Type):
         self.__type = Type
 
-class Rate:
+class Day:
+    """
+         A class to represent a individual day in a reservation.
 
-    table = "rate"
+        Attributes
+         --------------------------------------------------------------
+        ID : int
+            primary key of customer object in database
+        reservation_ID : int
+           foreign key of day object  mapped to reservation object in database
+        date : str
+            current date for the day
+        rate : float
+            current rate for the day
+
+        Methods
+        --------------------------------------------------------------
+        getters and setters for each attribute
+        """
+    table = "day"
     def __init__(self,*attributes):
 
         self.__ID , \
@@ -248,10 +264,6 @@ class Rate:
     def setRate(self,rate):
         self.__rate = rate
 
-
-    def __str__(self):
-        return f"{self.__ID,self.__reservation_ID,self.__date,self.__rate}"
-
 class Calender:
     """
            A class to represent the internal calender.
@@ -259,67 +271,82 @@ class Calender:
           Attributes
           --------------------------------------------------------------
 
-          global_calender: dict
-              a collection of datetime and baserate/room avalibity pairs
+          __CALENDER: dict
+              a collection of date and baserate/room avalibity pairs
 
           Methods
           --------------------------------------------------------------
-          booking()  -
-             @:param
-                period : dict
-                remove : bool
+          getBaserate() - returns for rate at specifyed date
+             :param
+                date : str
+             :return
+                Calender.__CALENDER[date][0] : float
 
-          is_valid()  - determines if period can be made (subject to avalibility)
-             @:param
-                period : ( Day , Day , Day ... )
-             @:return
-               all(Calender.get(day.getDate())[1] != 0 for day in period) : bool
+          booking()  - will incrememnt or decrement the number of rooms avaliable
+                        for each date in calender from list of rate objects
+             :param
+                time_period : ( Rate , Rate ... )
+                REMOVE: bool
+
+          rooms_are_avaliable()  - determines if period can be made (subject to avalibility)
+             :param
+                startdate : str
+                enddate : str
+             :return
+                bool
 
           load_calender() - gets calender data from database
           save_calender() - updates all calender data in database
           delete_calender() - removes all calender data from database
 
           """
-    CALENDER = {}
+    __CALENDER = {}
+
 
     @staticmethod
-    def booking(time_period,*,REMOVE = False ):
-         x = -1 if not REMOVE else 1
-         for day in time_period:
-            Calender.CALENDER[day.getDate()][1] += x
+    def getBaserate(date):
+        return Calender.__CALENDER[date][0]
+
+    #should only be called from the CLI.py
+    @staticmethod
+    def setData(date,baserate,totalrooms):
+        Calender.__CALENDER[date] = [baserate,totalrooms]
 
     @staticmethod
-    def base_rate(date,baserate = None):
-        if baserate == None:
-            return Calender.CALENDER[date][0]
-        Calender.CALENDER[date] = baserate
-
     def rooms_are_avaliable(startdate, enddate):
         current = datetime.strptime(startdate, '%m-%d-%y').date()
         stop = datetime.strptime(enddate, '%m-%d-%y').date()
         while current <= stop:
-            if Calender.base_rate(current.strftime("%m-%d-%y")) == 0:
-                return False
+            if Calender.__CALENDER[current.strftime("%m-%d-%y")][1] == 0:
+                    return False
             current += timedelta(days=1)
         return True
+
+    @staticmethod
+    def booking(time_period, *, REMOVE = False):
+        x = -1 if not REMOVE else 1
+        for day in time_period:
+            Calender.__CALENDER[day.getDate()][1] += x
+
+
 
     @staticmethod
     def load_calender():
         for day in Database.query("SELECT * FROM calender"):
             date ,baserate , rooms = day
-            Calender.CALENDER[date] = [baserate, rooms]
+            Calender.__CALENDER[date] = [baserate, rooms]
 
     @staticmethod
-    def delete_calender():
+    def __delete_calender():
         Database.query("DELETE FROM calender")
 
     @staticmethod
     def save_calender():
-        Calender.delete_calender()
-        for day in Calender.CALENDER:
+        Calender.__delete_calender()
+        for day in Calender.__CALENDER:
             date = day
-            baserate = Calender.CALENDER[day][0]
-            rooms =Calender.CALENDER[day][1]
+            baserate = Calender.__CALENDER[day][0]
+            rooms = Calender.__CALENDER[day][1]
             Database.query("INSERT INTO calender VALUES(?,?,?)", [date, baserate, rooms])
 
 
