@@ -106,8 +106,8 @@ class Customer:
 
     def __init__(self,*attributes):
         self.__ID , \
-        self.__name, \
-        self.__email, \
+        self.__name , \
+        self.__email , \
         self.__username , \
         self.__password , \
         self.__creditcard = attributes
@@ -148,9 +148,9 @@ class Reservation:
           primary key of reservation object in database
       customer_ID : int
           foreign key of reservation object mapped to customer object in database
-      startdate: str
+      startdate: datetime
           startdate of reservation
-      endate: str
+      endate: datetime
            enddate of reservation
       totalfees: float
            total amout of accumulated charges
@@ -207,9 +207,9 @@ class Reservation:
     def setCustomer_ID(self,customer_ID):
         self.__customer_ID = customer_ID
     def setStartdate(self,startdate):
-        self.__startdate = startdate
+        self.__startdate = datetime
     def setEnddate(self,enddate):
-        self.__enddate = enddate
+        self.__enddate =  datetime
     def setTotalFees(self,totalfees):
         self.__totalfees = totalfees
     def setCheckin(self,isCheckedin):
@@ -229,7 +229,7 @@ class Day:
             primary key of customer object in database
         reservation_ID : int
            foreign key of day object  mapped to reservation object in database
-        date : str
+        date : datetime
             current date for the day
         rate : float
             current rate for the day
@@ -242,8 +242,8 @@ class Day:
     def __init__(self,*attributes):
 
         self.__ID , \
-        self.__reservation_ID,\
-        self.__date , \
+        self.__reservation_ID , \
+        self.__date = date , \
         self.__rate = attributes
 
     def getID(self):
@@ -317,18 +317,16 @@ class Calender:
         current = datetime.strptime(startdate, '%m-%d-%y').date()
         stop = datetime.strptime(enddate, '%m-%d-%y').date()
         while current <= stop:
-            if Calender.__CALENDER[current.strftime("%m-%d-%y")][1] == 0:
+            if Calender.__CALENDER[current.strftime('%y-%m-%d')][1] == 0:
                     return False
             current += timedelta(days=1)
         return True
 
     @staticmethod
     def booking(time_period, *, REMOVE = False):
-        x = -1 if not REMOVE else 1
+        x = (-1 if not REMOVE else 1)
         for day in time_period:
             Calender.__CALENDER[day.getDate()][1] += x
-
-
 
     @staticmethod
     def load_calender():
