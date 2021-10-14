@@ -243,7 +243,7 @@ class Day:
 
         self.__ID , \
         self.__reservation_ID , \
-        self.__date = date , \
+        self.__date , \
         self.__rate = attributes
 
     def getID(self):
@@ -302,31 +302,39 @@ class Calender:
           """
     __CALENDER = {}
 
+    # should only be called from the CLI.py
+    @staticmethod
+    def getRooms(date):
+        return Calender.__CALENDER[date][1]
 
     @staticmethod
     def getBaserate(date):
         return Calender.__CALENDER[date][0]
 
+    @staticmethod
+    def setRooms(time_period, *, REMOVE=False):
+        x = (-1 if not REMOVE else 1)
+        for day in time_period:
+            Calender.__CALENDER[day.getDate()][1] += x
+
     #should only be called from the CLI.py
     @staticmethod
-    def setData(date,baserate,totalrooms):
-        Calender.__CALENDER[date] = [baserate,totalrooms]
+    def setBaserate(date, baserate):
+        if Calender.__CALENDER.get(date,"null") == 'null':
+            Calender.__CALENDER[date] = [baserate,45]
+        else:
+            Calender.__CALENDER[date][0] = baserate
 
     @staticmethod
     def rooms_are_avaliable(startdate, enddate):
         current = datetime.strptime(startdate, '%m-%d-%y').date()
         stop = datetime.strptime(enddate, '%m-%d-%y').date()
         while current <= stop:
-            if Calender.__CALENDER[current.strftime('%y-%m-%d')][1] == 0:
+            if Calender.__CALENDER[current.strftime('%m-%d-%y')][1] == 0:
                     return False
             current += timedelta(days=1)
         return True
 
-    @staticmethod
-    def booking(time_period, *, REMOVE = False):
-        x = (-1 if not REMOVE else 1)
-        for day in time_period:
-            Calender.__CALENDER[day.getDate()][1] += x
 
     @staticmethod
     def load_calender():

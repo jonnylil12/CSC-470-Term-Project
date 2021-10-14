@@ -1,7 +1,5 @@
 from events import *
-
 import os
-
 
 class CLI:
 
@@ -20,6 +18,8 @@ class CLI:
 
     @staticmethod
     def calenders(command = '' ,inputfile = '',*_):
+        # get latest calender data
+        Calender.load_calender()
 
         if command.lower() == "-s" :
 
@@ -33,16 +33,15 @@ class CLI:
                 CLI.error("file not found", inputfile)
 
             else:
-                with open(os.path.abspath("calenders") + "\\" +  inputfile) as file:
-                    for x , line in enumerate(file.readlines()):
+                filepath =  os.path.abspath("calenders") + "\\" + inputfile
+                with open(filepath) as file:
+                    for num , line in enumerate(file):
                         line = line.strip("\n").split()
-                        try:
-                            if line != []:
-                                date , baserate , rooms = line
-                                Calender.setData(date_to_string(string_to_date(date)),float(baserate),int(rooms))
-                        except Exception:
-                            CLI.error("invalid calender",x)
-
+                        if line != []:
+                            try:
+                                Calender.setBaserate(date_to_string(string_to_date(line[0])), float(line[1]))
+                            except Exception:
+                                CLI.error("invalid calender",num)
 
                 Calender.save_calender()
 
@@ -52,17 +51,20 @@ class CLI:
 
     @staticmethod
     def reports(command = '',*_):
+        #get latest calender data
+        Calender.load_calender()
         current = date.today()
+
         if command.lower() == "-ei":
             CLI.__generatExpectedIncome(current)
         elif command.lower() == "-eo":
             CLI.__generatExpectedOccupancy(current)
         elif command.lower() == "-i":
-                pass
+            CLI.__generateExpectedIncentive(current)
         elif command.lower() == "-da":
-                pass
+            CLI.__generateDailyArrivals(current)
         elif command.lower() == "-do":
-                pass
+            CLI.__generateDailyOccupancy(current)
         else:
             CLI.error("command", "reports", command)
 
@@ -70,61 +72,108 @@ class CLI:
 
     @staticmethod
     def __generatExpectedIncome(current):
-         filepath = os.path.abspath('reports') + '\\' + current.strftime('%m-%d-%y') + ".Expected Income"
+         #testing
+         current = datetime.strptime("10-01-21","%m-%d-%y").date()
+         filepath = os.path.abspath('reports') + '\\' + date_to_string(current) + ".Expected Income"
+
          with open(f"{filepath}.txt","w") as file:
              total_period_income = 0
              for _ in range(30):
-                  day = current.strftime('%m-%d-%y')
+                  current_date = date_to_string(current)
                   total_day_income = Database.query(f"SELECT sum(rate) FROM day "
-                                                   f"WHERE date == '{day}'")[0][0]
+                                                   f"WHERE date == '{current_date}'")[0][0]
 
                   total_day_income = (0.00 if total_day_income == None else total_day_income)
 
-                  file.write(f"Date: {day} total income: ${format(total_day_income, '.2f')}\n")
+                  file.write(f"Date: {current_date} total income: ${format(total_day_income, '.2f')}\n")
                   total_period_income += total_day_income
+                  average_period_income = total_period_income / 30
                   current += timedelta(days=1)
 
-             file.write(f"total period income: ${format(total_period_income, '.2f')}\n")
-             file.write(f"average period income: ${format(total_period_income / 30, '.2f')}")
+             file.write(f"Total period income: ${format(total_period_income, '.2f')}\n")
+             file.write(f"Average period income: ${format(average_period_income, '.2f')}")
 
 
 
     @staticmethod
     def __generatExpectedOccupancy(current):
-        filepath = os.path.abspath('reports') + '\\' + current.strftime('%m-%d-%y') + ".Expected Occupancy"
+        #testing
+        current = datetime.strptime("10-01-21","%m-%d-%y").date()
+        filepath = os.path.abspath('reports') + '\\' + date_to_string(current) + ".Expected Occupancy"
+
         with open(f"{filepath}.txt", "w") as file:
             total_period_occupancy = 0
             for _ in range(30):
-                day = current.strftime('%m-%d-%y')
-                prepaid = Database.query(f"SELECT count(*) FROM reservation "  +
-                                         "WHERE type == 'prepaid' " +
-                                         f"AND '{day}' BETWEEN startdate and enddate")[0][0]
+                current_date = date_to_string(current)
+                all_results = Database.query(f"SELECT type , count(*) FROM reservation " +
+                                                           f"WHERE '{current_date}' BETWEEN startdate AND enddate " +
+                                                           f"GROUP BY type")
+                convert = {type[0]:type[1] for type in all_results}
 
-                sixtyday = Database.query(f"SELECT count(*) FROM reservation "  +
-                                           "WHERE type == 'sixtyday' " +
-                                           f"AND '{day}' BETWEEN startdate and enddate")[0][0]
+                prepaid  = convert.get("prepaid",0)
+                sixtyday  = convert.get("sixtyday",0)
+                conventional = convert.get("conventional",0)
+                incentive  =  convert.get("incentive",0)
+                total_day_occupancy = 45 - Calender.getRooms(current_date)
 
-                conventional = Database.query(f"SELECT count(*) FROM reservation "  +
-                                             "WHERE type == 'conventional' " +
-                                             f"AND '{day}' BETWEEN startdate and enddate")[0][0]
-
-                incentive = Database.query(f"SELECT count(*) FROM reservation "  +
-                                             "WHERE type == 'incentive' " +
-                                             f"AND '{day}' BETWEEN startdate and enddate")[0][0]
-
-                total_day_occupancy = prepaid + sixtyday + conventional + incentive
-
-
-                file.write(f"Date: {day}  " +
-                           f"prepaid: {prepaid}   sixtyday: {sixtyday}   " +
-                           f"conventional: {conventional}   incentive: {incentive}   " +
-                           f"total: {total_day_occupancy}\n")
+                file.write(f"Date: {current_date}    Prepaid: {prepaid}    Sixtyday: {sixtyday}   " +
+                           f"Conventional: {conventional}    Incentive: {incentive}    Total: {total_day_occupancy}\n")
 
                 total_period_occupancy += total_day_occupancy
+                average_period_occupancy = total_period_occupancy / 30
+                occupancy_rate = average_period_occupancy / 45
                 current += timedelta(days=1)
 
-            file.write(f"average period occupancy: {format(total_period_occupancy / 30, '.2f')}")
+            file.write(f"Occupancy rate: {format(occupancy_rate, '.2f')}")
 
+
+    @staticmethod
+    def __generateExpectedIncentive(current):
+        # testing
+        current = datetime.strptime("10-01-21", "%m-%d-%y").date()
+        filepath = os.path.abspath('reports') + '\\' + date_to_string(current) + ".Expected Incentive"
+
+        with open(f"{filepath}.txt", "w") as file:
+            total_period_incentive_discount = 0
+            for _ in range(30):
+                current_date = date_to_string(current)
+                total_day_income = Database.query(f"SELECT sum(rate) FROM day "
+                                                  f"WHERE date == '{current_date}'")[0][0]
+
+                total_incentive_discount = (0.00 if total_day_income == None else total_day_income) * 0.20
+
+                file.write(f"Date: {current_date} total incentive discount: ${format(total_incentive_discount, '.2f')}\n")
+                total_period_incentive_discount +=  total_incentive_discount
+                average_period_incentive_discount =  total_period_incentive_discount / 30
+                current += timedelta(days=1)
+
+            file.write(f"Total period incentive discount: ${format( total_period_incentive_discount, '.2f')}\n")
+            file.write(f"Average period incentive discount: ${format(average_period_incentive_discount, '.2f')}")
+
+
+
+    @staticmethod
+    def __generateDailyArrivals(current):
+        #testing
+        current = datetime.strptime("10-01-21", "%m-%d-%y").date()
+        filepath = os.path.abspath('reports') + '\\' + date_to_string(current) + ".Daily Arrivals"
+        with open(f"{filepath}.txt", "w") as file:
+            current_date = date_to_string(current)
+            all_results = Database.query("SELECT (SELECT name FROM customer WHERE ID == r.customer_ID ), " +
+                                        "type, roomnumber, enddate " +
+                                        "FROM reservation r " +
+                                        f"WHERE startdate == '{current_date}'"
+                                        "AND roomnumber IS NOT NULL")
+            if  all_results == []:
+                file.write("No Daily Arrivals")
+            else:
+                for name , type , roomnumber , enddate in all_results:
+                    file.write(f"Name: {name}    Type: {type}    Roomnumber: {roomnumber}    Enddate: {enddate}\n")
+
+
+    @staticmethod #todo
+    def __generateDailyOccupancy(current):
+        pass
 
     @staticmethod
     def error(code,*args):
