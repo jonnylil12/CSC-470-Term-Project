@@ -302,7 +302,7 @@ class Calender:
           """
     __CALENDER = {}
 
-    # should only be called from the CLI.py
+    # should only be called from the HOTEL_MANAGMENT.py
     @staticmethod
     def getRooms(date):
         return Calender.__CALENDER[date][1]
@@ -317,7 +317,7 @@ class Calender:
         for day in time_period:
             Calender.__CALENDER[day.getDate()][1] += x
 
-    #should only be called from the CLI.py
+    #should only be called from the HOTEL_MANAGMENT.py
     @staticmethod
     def setBaserate(date, baserate):
         if Calender.__CALENDER.get(date,"null") == 'null':
