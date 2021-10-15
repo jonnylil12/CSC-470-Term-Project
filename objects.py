@@ -329,7 +329,7 @@ class Calender:
     def rooms_are_avaliable(startdate, enddate):
         current = datetime.strptime(startdate, '%m-%d-%y').date()
         stop = datetime.strptime(enddate, '%m-%d-%y').date()
-        while current <= stop:
+        while current < stop:
             if Calender.__CALENDER[current.strftime('%m-%d-%y')][1] == 0:
                     return False
             current += timedelta(days=1)

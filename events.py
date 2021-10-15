@@ -3,7 +3,7 @@ from objects import *
 def yield_dates(startdate,enddate):
     current = datetime.strptime(startdate, '%m-%d-%y').date()
     stop = datetime.strptime(enddate, '%m-%d-%y').date()
-    while current <= stop:
+    while current < stop:
          yield current.strftime('%m-%d-%y')
          current += timedelta(days=1)
 
