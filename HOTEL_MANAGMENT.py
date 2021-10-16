@@ -1,9 +1,5 @@
 from system_procedures import *
-from system_objects import *
 import os
-
-
-
 
 
 def help():
@@ -49,8 +45,8 @@ def  contextmanager(func):
     def wrapper(report_type):
 
         current = date.today()
-        # testing purposes
-        # current = string_to_date("10-02-21")
+        #testing purposes
+        current = str_to_date("10-01-21")
         filepath = f"{os.path.abspath('reports')}\\{date_to_str(current)}  {report_type}"
         with open(f"{filepath}.txt", "w") as file:
             func(current, file)
@@ -114,8 +110,8 @@ def generatExpectedOccupancy(current,file):
      total_period_occupancy = 0
      for _ in range(30):
          all_results = Database.query(f"SELECT type , count(*) FROM reservation " +
-                                      f"WHERE '{date_to_str(current)}' " +
-                                      f"BETWEEN startdate AND enddate " +
+                                      f"WHERE startdate <= '{date_to_str(current)}' " +
+                                      f"AND '{date_to_str(current)}' < enddate " +
                                       f"GROUP BY type")
 
          convert = {type[0]: type[1] for type in all_results}
@@ -165,7 +161,7 @@ def generateExpectedIncentive(current,file):
 
 @contextmanager
 def generateDailyArrivals(current,file):
-    all_results = Database.query("SELECT (SELECT name FROM customer WHERE ID == r.customer_ID ), " +
+    all_results = Database.query("SELECT (SELECT name FROM customer WHERE ID == r.customer_ID ) AS name, " +
                                  "type, roomnumber, enddate " +
                                  "FROM reservation r " +
                                  f"WHERE startdate == '{date_to_str(current)}' " +
