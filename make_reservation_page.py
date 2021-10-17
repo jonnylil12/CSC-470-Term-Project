@@ -1,5 +1,4 @@
 from system_procedures import *
-from system_objects import *
 Calender.load_calender()
 
 def generate_days(startdate, enddate, ID):
@@ -46,6 +45,7 @@ else:
     Calender.setRooms(all_days, REMOVE = False)
     Calender.save_calender()
 
+   # alert user of successfull creation
 
 
 

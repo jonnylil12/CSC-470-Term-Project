@@ -1,6 +1,7 @@
 import sqlite3
 from datetime import datetime, timedelta , date
 
+
 class Database:
 
     """
@@ -183,7 +184,8 @@ class Reservation:
         self.__totalfees , \
         self.__isCheckedin , \
         self.__roomnumber , \
-        self.__type = attributes
+        self.__type , \
+        self.__paydate = attributes
 
     def getID(self):
         return self.__ID
@@ -195,12 +197,14 @@ class Reservation:
         return self.__enddate
     def getTotalFees(self):
         return self.__totalfees
-    def isCheckedin(self):
+    def getCheckedin(self):
         return self.__isCheckedin
     def getRoomnumber(self):
         return self.__roomnumber
     def getType(self):
         return self.__type
+    def getPaydate(self):
+        return self.__paydate
 
     def setID(self,ID):
         self.__ID = ID
@@ -212,12 +216,14 @@ class Reservation:
         self.__enddate =  datetime
     def setTotalFees(self,totalfees):
         self.__totalfees = totalfees
-    def setCheckin(self,isCheckedin):
+    def setCheckedin(self, isCheckedin):
         self.__isCheckedin = isCheckedin
     def setRoomnumber(self,roomnumber):
         self.__roomnumber = roomnumber
     def setType(self,Type):
         self.__type = Type
+    def setPaydate(self, paydate):
+        self.__paydate = paydate
 
 class Day:
     """
@@ -327,8 +333,8 @@ class Calender:
 
     @staticmethod
     def rooms_are_avaliable(startdate, enddate):
-        current = datetime.strptime(startdate, '%m-%d-%y').date()
-        stop = datetime.strptime(enddate, '%m-%d-%y').date()
+        current = datetime.strptime(startdate,"%m-%d-%y").date()
+        stop = datetime.strptime(enddate,"%m-%d-%y").date()
         while current < stop:
             if Calender.__CALENDER[current.strftime('%m-%d-%y')][1] == 0:
                     return False
@@ -361,6 +367,8 @@ class Prepaid(Reservation):
 
      def  __init__(self,*attributes):
         super().__init__(*attributes)
+
+
 
      def is_valid(self):
         return Calender.rooms_are_avaliable(self.getStartdate(), self.getEnddate())
