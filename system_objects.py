@@ -362,24 +362,31 @@ class Calender:
             Database.query("INSERT INTO calender VALUES(?,?,?)", [date, baserate, rooms])
 
 
-#todo
 class Prepaid(Reservation):
 
+     percent = 0.75
      def  __init__(self,*attributes):
         super().__init__(*attributes)
 
 
 
      def is_valid(self):
-        return Calender.rooms_are_avaliable(self.getStartdate(), self.getEnddate())
+        return all ( (date.today(),
+
+                      ))
 
 
 #todo
 class Sixty_days_in_advance(Reservation):
 
+    percent = 0.85
     def __init__(self,*attributes):
         super().__init__(*attributes)
 
+    def is_valid(self):
+        return all((),
+
+                    ))
 
 #todo
 class Conventional(Reservation):

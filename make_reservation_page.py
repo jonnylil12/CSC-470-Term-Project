@@ -1,11 +1,22 @@
 from system_procedures import *
 Calender.load_calender()
 
-def generate_days(startdate, enddate, ID):
-    all_dates = system_date_range(startdate, enddate)
-    all_days = [ Day(None, ID, date, Calender.getBaserate(date)) for date in all_dates]
-    totalfees = sum([day.getRate() for day in all_days])
-    return all_days , totalfees
+def generate_days(reservation):
+    all_dates = system_date_range(reservation.getStartdate(),reservation.getEnddate())
+
+    all_days = []
+    totalfees = 0
+    for date in all_dates:
+          rate = Calender.getBaserate(date)
+          day = Day(None, reservation.getID(), date, rate * reservation.percent)
+          all_days.append(day)
+          totalfees += rate
+
+    reservation.setTotalFees(totalfees)
+    Database.save_object(reservation)
+
+    return all_days
+
 
 #customer chooses to make prepaid reservation
 
@@ -26,24 +37,26 @@ reservation = Prepaid(None,customer_ID,startdate,enddate,None,False,None,Type,pa
 
 
 
-if not (system_str_to_date(startdate < enddate)):
+if not (system_str_to_date(startdate) < system_str_to_date(enddate)):
     print("SYSTEM ERROR startdate must be less than enddate")
 
-if not date.today() <= system_str_to_date(startdate):
+elif not (date.today() <= system_str_to_date(startdate) ):
     print("SYSTEM ERROR you cannot make a reservation starting in the past")
+
+elif not Calender.rooms_are_avaliable(startdate, enddate):
+    print("SYSTEM ERROR there are no rooms avaliable for that entire period")
 
 elif not reservation.is_valid():
     print("SYSTEM ERROR reservation is not valid")
+
 
 else:
     #generate chares
     Database.save_object(reservation)
 
-    all_days ,totalfees = generate_days(startdate, enddate, reservation.getID())
-    [Database.save_object(day) for day in all_days]
+    all_days = generate_days(reservation)
 
-    reservation.setTotalFees(totalfees)
-    Database.save_object(reservation)
+    [Database.save_object(day) for day in all_days]
 
     # show charges
 
