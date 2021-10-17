@@ -14,6 +14,16 @@ def system_date_range(startdate, enddate):
          yield current.strftime('%m-%d-%y')
          current += timedelta(days=1)
 
-def system_clear_reservations():
-    overdue = Database.query(8)
-    #current > endate
+def system_overdue_reservations():
+    overdue_stays = Database.load_object("SELECT * FROM reservation " +
+                                         f"WHERE '{system_date_to_str(date.today())}' > enddate " +
+                                         'AND checkedin == True',
+                                         Reservation)
+    for reservation in overdue_stays:
+        if reservation.getType() in 'convetional,incentive':
+            reservation.setPaydate(reservation.getEnddate())
+
+        reservation.setCheckedin(None)
+        Database.save_object(reservation)
+
+

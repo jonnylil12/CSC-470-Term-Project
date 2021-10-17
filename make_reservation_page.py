@@ -18,18 +18,24 @@ enddate = input("enddate:") #'10-10-21'
 totalfees = None
 checkin = False
 roomnumber = None
+paydate = (system_date_to_str(date.today()) if Type in 'prepaid,conventional' else None)
+
 
 #user chooses to create reservation
-reservation = Prepaid(None,customer_ID,startdate,enddate,None,False,None,Type)
+reservation = Prepaid(None,customer_ID,startdate,enddate,None,False,None,Type,paydate)
 
 
 
-if not reservation.is_valid():
-    pass
-    #alert user
+if not (system_str_to_date(startdate < enddate)):
+    print("SYSTEM ERROR startdate must be less than enddate")
+
+if not date.today() <= system_str_to_date(startdate):
+    print("SYSTEM ERROR you cannot make a reservation starting in the past")
+
+elif not reservation.is_valid():
+    print("SYSTEM ERROR reservation is not valid")
 
 else:
-
     #generate chares
     Database.save_object(reservation)
 
@@ -46,8 +52,6 @@ else:
     Calender.save_calender()
 
    # alert user of successfull creation
-
-
 
 
 

@@ -107,16 +107,17 @@ def penaltys(command = '', rate = '',*_):
                                                 f"WHERE reservation_ID = '{reservation.getID()}' " +
                                                 "ORDER BY date ASC",
                                                 Day)
-
-                if reservation.getType() in 'prepaid,sixtyday':
-
-                    first_day_charge = all_days[0].getRate()
-                    all_days[0].setRate(first_day_charge + float(rate))
-                    Database.save_object(all_days[0])
-
-                #charged for first day
-                elif reservation.getType() in 'conventional,incentive':
+                # charged for first day only
+                if reservation.getType() in 'conventional,incentive':
                     [Database.delete_object(day) for day in all_days[1:]]
+                    reservation.setTotalFees(all_days[0].getRate())
+                    reservation.setPaydate(system_date_to_str(date.today()))
+
+                # charged no show penalty
+                else:
+                    all_days[0].setRate(all_days[0].getRate() + float(rate))
+                    Database.save_object(all_days[0])
+                    reservation.setTotalFees(reservation.getTotalFees() + float(rate))
 
                 reservation.setCheckedin(None)
                 Database.save_object(reservation)
@@ -124,6 +125,7 @@ def penaltys(command = '', rate = '',*_):
                 # update room avalibility
                 Calender.setRooms(all_days, REMOVE=True)
                 Calender.save_calender()
+
 
 
 
