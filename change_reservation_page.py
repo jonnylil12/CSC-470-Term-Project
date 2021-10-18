@@ -1,2 +1,2 @@
-from system_procedures import *
+from system_core import *
 Calender.load_calender()

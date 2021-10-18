@@ -1,5 +1,4 @@
-from system_procedures import *
-from system_objects import *
+from system_core import *
 Calender.load_calender()
 
 #log in

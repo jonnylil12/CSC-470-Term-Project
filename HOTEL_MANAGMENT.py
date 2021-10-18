@@ -1,4 +1,4 @@
-from system_procedures import *
+from system_core import *
 import os
 
 
@@ -143,6 +143,7 @@ def  contextmanager(func):
 
     return wrapper
 
+
 @contextmanager
 def generatExpectedIncome(current,output_file):
         total_period_income = 0
@@ -166,18 +167,17 @@ def generatExpectedIncome(current,output_file):
 def generatExpectedOccupancy(current,output_file):
      total_period_occupancy = 0
      for _ in range(30):
-         all_results = Database.query(f"SELECT type , count(*) FROM reservation " +
+         all_results = dict(Database.query(f"SELECT type , count(*) FROM reservation " +
                                       f"WHERE startdate <= '{system_date_to_str(current)}' " +
                                       f"AND '{system_date_to_str(current)}' < enddate " +
                                       "AND checkedin IS NOT NULL " +
-                                      f"GROUP BY type")
+                                      f"GROUP BY type"))
 
-         convert = {type[0]: type[1] for type in all_results}
+         prepaid = all_results.get("prepaid", 0)
+         sixtyday = all_results.get("sixtyday", 0)
+         conventional = all_results.get("conventional", 0)
+         incentive = all_results.get("incentive", 0)
 
-         prepaid = convert.get("prepaid", 0)
-         sixtyday = convert.get("sixtyday", 0)
-         conventional = convert.get("conventional", 0)
-         incentive = convert.get("incentive", 0)
          total_day_occupancy = 45 - Calender.getRooms(system_date_to_str(current))
 
          output_file.write(f"Date: {system_date_to_str(current)}    Prepaid: {prepaid}    " +

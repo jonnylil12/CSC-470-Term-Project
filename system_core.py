@@ -1,6 +1,56 @@
 import sqlite3
 from datetime import datetime, timedelta , date
 
+#####################################################################################
+#################################### SYSTEM CALLS  #################################
+#######################################################################################
+
+
+def system_str_to_date(string):
+    return datetime.strptime(string, '%m-%d-%y').date()
+
+def system_date_to_str(date):
+    return date.strftime('%m-%d-%y')
+
+def system_date_range(startdate, enddate):
+    current = system_str_to_date(startdate)
+    stop = system_str_to_date(enddate)
+    while current < stop:
+         yield current.strftime('%m-%d-%y')
+         current += timedelta(days=1)
+
+
+def system_overdue_reservations():
+    overdue_stays = Database.load_object("SELECT * FROM reservation " +
+                                         f"WHERE '{system_date_to_str(date.today())}' > enddate " +
+                                         'AND checkedin == True',
+                                         Reservation)
+    for reservation in overdue_stays:
+        if reservation.getType() in 'convetional,incentive':
+            reservation.setPaydate(reservation.getEnddate())
+
+        reservation.setCheckedin(None)
+        Database.save_object(reservation)
+
+
+def system_generate_days(reservation):
+
+    totalfees = 0
+    all_days = []
+    for date in system_date_range(reservation.getStartdate(),reservation.getEnddate()):
+          rate = Calender.getBaserate(date) * reservation.getPercent()
+          all_days.append(   Day(None, reservation.getID(), date, rate)  )
+          totalfees += rate
+
+    reservation.setTotalFees(totalfees)
+    Database.save_object(reservation)
+
+    return all_days
+
+#####################################################################################
+#################################### SYSTEM OBJECTS  #################################
+#######################################################################################
+
 
 class Database:
 
@@ -333,12 +383,9 @@ class Calender:
 
     @staticmethod
     def rooms_are_avaliable(startdate, enddate):
-        current = datetime.strptime(startdate,"%m-%d-%y").date()
-        stop = datetime.strptime(enddate,"%m-%d-%y").date()
-        while current < stop:
-            if Calender.__CALENDER[current.strftime('%m-%d-%y')][1] == 0:
+        for date in system_date_range(startdate,enddate):
+            if Calender.__CALENDER[date][1] == 0:
                     return False
-            current += timedelta(days=1)
         return True
 
 
@@ -364,43 +411,67 @@ class Calender:
 
 class Prepaid(Reservation):
 
-     percent = 0.75
+     __percent = 0.75
      def  __init__(self,*attributes):
         super().__init__(*attributes)
 
 
+     def is_valid(self,user):
+         return all ( ( system_str_to_date(self.getStartdate()) <= (date.today() - timedelta(days=90)),
+                       user.getCreditcard() != None ) )
 
-     def is_valid(self):
-        return all ( (date.today(),
-
-                      ))
+     @staticmethod
+     def getPercent():
+         return Prepaid.__percent
 
 
 #todo
-class Sixty_days_in_advance(Reservation):
+class Sixtyday(Reservation):
 
-    percent = 0.85
+    __percent = 0.85
     def __init__(self,*attributes):
         super().__init__(*attributes)
 
-    def is_valid(self):
-        return all((),
+    def is_valid(self,user):
+        return all ( ( system_str_to_date(self.getStartdate()) == (date.today() - timedelta(days=60)),
+                      user.getEmail() != None ) )
 
-                    ))
+    @staticmethod
+    def getPercent():
+        return Sixtyday.__percent
+
 
 #todo
 class Conventional(Reservation):
 
+    __percent = 1.00
     def __init__(self,*attributes):
         super().__init__(*attributes)
+
+    def is_valid(self, user):
+        return all( (system_str_to_date(self.getStartdate()) == (date.today() - timedelta(days=60)),
+                    user.getCreditcard() != None ) )
+
+    @staticmethod
+    def getPercent():
+        return Conventional.__percent
+
 
 
 #todo
 class Incentive(Reservation):
+
+    __percent = 1.00
     def __init__(self,*attributes):
         super().__init__(*attributes)
 
+    def is_valid(self, user):
+        return all( (system_str_to_date(self.getStartdate()) == (date.today() - timedelta(days=60)),
+                    user.getCreditcard() != None) )
 
+    @staticmethod
+    def getPercent():
+        return Incentive.__percent
 
 
 
