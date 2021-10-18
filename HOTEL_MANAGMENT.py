@@ -1,5 +1,11 @@
 from system_core import *
 import os
+import smtplib ,ssl
+
+system_remove_noshows()   # remove reservations that havent checked in and its past startdate
+system_remove_unpayed()   # remove sixtydays that havent payed and its pass grace period
+system_remove_notlefted()  # remove reservations that havent been checked out and its past enddate
+
 
 
 def help():
@@ -14,7 +20,8 @@ def help():
           "reports -I                    generates a incentive report and saves it to reports folder\n"
           "reports -DA                   generates a daily arrivals report and saves it to reports folder\n"
           "reports -DO                   generates a daily occupancy report and saves it to reports folder\n"
-          "penaltys -NS  (input rate)    generates no show charges with input rate\n")
+          "emails  -S                    generates and sends email reminders for sixtyday reservations\n")
+
 
 def error(code,*args):
 
@@ -48,9 +55,6 @@ def error(code,*args):
 
 
 
-
-
-
 def calenders(command = '' ,inputfile = '',*_):
         if command.lower() != "-s" :
             error("command", "calenders", command)
@@ -74,74 +78,67 @@ def calenders(command = '' ,inputfile = '',*_):
                         line = line.strip("\n").split()
                         if line != []:
                             try:
-                                Calender.setBaserate(system_date_to_str(system_str_to_date(line[0])), float(line[1]))
+                                system_str_to_date(line[0])
                             except Exception:
                                 error("invalid calender",num)
+                            else:
+                                Calender.setBaserate( line[0], float(line[1]) )
+
 
                 Calender.save_calender()
 
 
 
 
+def emails(command = '',*_):
 
-def penaltys(command = '', rate = '',*_):
-
-
-        if command.lower() != "-ns":
-            error("command", "noshow", command)
-
-        elif rate == '':
-            error('value')
-
-        elif not all(x.isdigit() or x == '.' for x in rate):
-            error('value')
+        if command.lower() != "-s":
+            error("command", "emails", command)
 
         else:
-            all_no_shows = Database.load_object("SELECT * FROM reservation  " +
-                                                f"WHERE startdate < '{system_date_to_str(date.today())}' " +
-                                                "AND checkedin == False",
+            all_unpayed = Database.load_object("SELECT * FROM reservation " +
+                                                "WHERE type == 'sixtyday' " +
+                                                "AND checkedin IS NOT NULL "
+                                                "AND paydate IS NULL",
                                                 Reservation)
+            if all_unpayed != []:
+                for reservation in all_unpayed:
+                    from_start_45  = system_str_to_date(reservation.getStartdate()) - timedelta(days=45)
+                    from_start_30 = system_str_to_date(reservation.getStartdate())  - timedelta(days=30)
 
-            for reservation in all_no_shows:
-                all_days = Database.load_object("SELECT * FROM day " +
-                                                f"WHERE reservation_ID = '{reservation.getID()}' " +
-                                                "ORDER BY date ASC",
-                                                Day)
-                # charged for first day only
-                if reservation.getType() in 'conventional,incentive':
-                    [Database.delete_object(day) for day in all_days[1:]]
-                    reservation.setTotalFees(all_days[0].getRate())
-                    reservation.setPaydate(system_date_to_str(date.today()))
+                    if from_start_45 <= date.today() <= from_start_30:
+                            name , email = Database.query("SELECT name , email FROM customer " +
+                                                          f"WHERE ID == '{reservation.getCustomer_ID()}' ")[0]
 
-                # charged no show penalty
-                else:
-                    all_days[0].setRate(all_days[0].getRate() + float(rate))
-                    Database.save_object(all_days[0])
-                    reservation.setTotalFees(reservation.getTotalFees() + float(rate))
+                            port , username ,password = 465 ,'hotelmanagment470@gmail.com' ,'employee470'
+                            message = f"""Subject: Payment Reminder\n\n
+                                       Greetings {name},
 
-                reservation.setCheckedin(None)
-                Database.save_object(reservation)
+                                       This is a reminder to pay for you reservation 
+                                       within 15 days or else it will be cancelled
 
-                # update room avalibility
-                Calender.setRooms(all_days, REMOVE=True)
-                Calender.save_calender()
+                                       Thank you.
 
+                                       This is an automated email , please do not reply          
+                                       """
+
+                            with smtplib.SMTP_SSL("smtp.gmail.com", port) as server:
+                                server.login(username, password)
+                                server.sendmail(username, email, message)
 
 
 
 
 def  contextmanager(func):
 
-    def wrapper(report_type):
-        current = date.today()
-        #testing purposes
-        current = system_str_to_date("10-01-21")
+        def wrapper(report_type):
+            current = date.today()
+            filepath = f"{os.path.abspath('reports')}\\{system_date_to_str(current)}  {report_type}"
+            with open(f"{filepath}.txt", "w") as output_file:
+                func(current,output_file)
 
-        filepath = f"{os.path.abspath('reports')}\\{system_date_to_str(current)}  {report_type}"
-        with open(f"{filepath}.txt", "w") as output_file:
-            func(current,output_file)
+        return wrapper
 
-    return wrapper
 
 
 @contextmanager
@@ -151,7 +148,7 @@ def generatExpectedIncome(current,output_file):
             total_day_income = Database.query(f"SELECT sum(rate) FROM day "
                                               f"WHERE date == '{system_date_to_str(current)}'")[0][0]
 
-            total_day_income = (0.00 if total_day_income == None else total_day_income)
+            total_day_income = (total_period_income if total_day_income != None else 0.00)
 
             output_file.write(f"Date: {system_date_to_str(current)}    total income: ${total_day_income:.2f}\n")
             total_period_income += total_day_income
@@ -163,26 +160,30 @@ def generatExpectedIncome(current,output_file):
 
 
 
+
+
 @contextmanager
 def generatExpectedOccupancy(current,output_file):
+
      total_period_occupancy = 0
      for _ in range(30):
-         all_results = dict(Database.query(f"SELECT type , count(*) FROM reservation " +
-                                      f"WHERE startdate <= '{system_date_to_str(current)}' " +
-                                      f"AND '{system_date_to_str(current)}' < enddate " +
-                                      "AND checkedin IS NOT NULL " +
-                                      f"GROUP BY type"))
+         all_results  =    Database.query(f"SELECT type , count(*) FROM reservation " +
+                                          f"WHERE startdate <= '{system_date_to_str(current)}' " +
+                                          f"AND '{system_date_to_str(current)}' < enddate " +
+                                          "AND checkedin IS NOT NULL " +
+                                          f"GROUP BY type")
+
+         all_results = ( dict(all_results) if all_results != [] else {} )
 
          prepaid = all_results.get("prepaid", 0)
          sixtyday = all_results.get("sixtyday", 0)
          conventional = all_results.get("conventional", 0)
          incentive = all_results.get("incentive", 0)
-
          total_day_occupancy = 45 - Calender.getRooms(system_date_to_str(current))
 
          output_file.write(f"Date: {system_date_to_str(current)}    Prepaid: {prepaid}    " +
-                    f"Sixtyday: {sixtyday}   Conventional: {conventional}    " +
-                    f"Incentive: {incentive}    Total: {total_day_occupancy}\n")
+                           f"Sixtyday: {sixtyday}   Conventional: {conventional}    " +
+                           f"Incentive: {incentive}    Total: {total_day_occupancy}\n")
 
          total_period_occupancy += total_day_occupancy
          current += timedelta(days=1)
@@ -194,23 +195,25 @@ def generatExpectedOccupancy(current,output_file):
 
 
 
+
 @contextmanager
 def generateExpectedIncentive(current,output_file):
-    total_period_incentive_discount = 0
+
+    total_period_discount = 0
     for _ in range(30):
         total_day_income = Database.query(f"SELECT sum(rate) FROM day "
                                           f"WHERE date == '{system_date_to_str(current)}'")[0][0]
 
-        total_incentive_discount = (0.00 if total_day_income == None else total_day_income) * 0.20
+        total_day_discount = (total_day_income if total_day_income != None else 0.00) * 0.20
 
         output_file.write(f"Date: {system_date_to_str(current)}    " +
-                   f"total incentive discount: ${total_incentive_discount:,.2f}\n")
+                         f"total incentive discount: ${total_day_discount:,.2f}\n")
 
-        total_period_incentive_discount += total_incentive_discount
+        total_period_discount += total_day_discount
         current += timedelta(days=1)
 
-    average_period_incentive_discount = total_period_incentive_discount / 30
-    output_file.write(f"Total period incentive discount: ${total_period_incentive_discount:,.2f}\n")
+    average_period_incentive_discount = total_period_discount / 30
+    output_file.write(f"Total period incentive discount: ${total_period_discount:,.2f}\n")
     output_file.write(f"Average period incentive discount: ${average_period_incentive_discount:,.2f}")
 
 
@@ -219,27 +222,28 @@ def generateExpectedIncentive(current,output_file):
 
 @contextmanager
 def generateDailyArrivals(current,output_file):
-    all_results = Database.query("SELECT (SELECT name FROM customer WHERE ID == r.customer_ID ) AS " +
-                                 "name, type, roomnumber, enddate " +
-                                 "FROM reservation r " +
+    all_results = Database.query("SELECT name, type, roomnumber, enddate " +
+                                 "FROM reservation r , customer c" +
                                  f"WHERE startdate == '{system_date_to_str(current)}' " +
+                                 "AND c.ID == customer_ID"
                                  "AND checkedin == True " +
                                  "ORDER BY name ASC")
     if all_results != []:
         for name, Type, roomnumber, enddate in all_results:
             output_file.write(f"Name: {name}    Type: {Type}   " +
-                       f"Room number: {roomnumber}    Departure date: {enddate}\n")
+                              f"Room number: {roomnumber}    Departure date: {enddate}\n")
     else:
         output_file.write("No Daily Arrivals")
 
 
 
+
 @contextmanager
 def generateDailyOccupancy(current,output_file):
-    all_results = Database.query("SELECT (SELECT name FROM customer WHERE ID == r.customer_ID ) AS " +
-                                 "name, roomnumber, enddate " +
-                                 "FROM reservation r " +
+    all_results = Database.query("SELECT name, roomnumber, enddate " +
+                                 "FROM reservation r , customer c" +
                                  f"WHERE startdate < '{system_date_to_str(current)}' " +
+                                 "AND c.ID == customer_ID"
                                  "AND checkedin == True " +
                                  "ORDER BY roomnumber ASC")
 
@@ -293,8 +297,8 @@ def main():
             elif args[0] == "reports":
                 reports(*args[1:])
 
-            elif args[0] == "penaltys":
-                penaltys(*args[1:])
+            elif args[0] == "emails":
+                emails(*args[1:])
 
             else:
                 error("program",*args)

@@ -15,7 +15,7 @@ enddate = input("enddate:") #'10-10-21'
 totalfees = None
 checkin = False
 roomnumber = None
-paydate = (system_date_to_str(date.today()) if Type in 'prepaid,sixtyday' else None)
+paydate = (system_date_to_str(date.today()) if Type == 'prepaid' else None)
 
 
 #user chooses to create reservation
