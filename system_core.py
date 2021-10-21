@@ -107,20 +107,19 @@ def system_remove_notlefted():
             Calender.save_calender()
 
 
-
-def system_generate_days(reservation):
-
+def system_generate_days(reservation,changed = False):
         totalfees = 0
         all_days = []
         for date in system_date_range(reservation.getStartdate(),reservation.getEnddate()):
-              rate = Calender.getBaserate(date) * reservation.getPercent()
+              rate = Calender.getBaserate(date) * (1.10 if changed else reservation.getPercent())
               all_days.append(   Day(None, reservation.getID(), date, rate)  )
               totalfees += rate
 
-        reservation.setTotalFees(totalfees)
-        Database.save_object(reservation)
+        return all_days , totalfees
 
-        return all_days
+
+
+
 
 #####################################################################################
 #################################### SYSTEM OBJECTS  #################################
@@ -496,7 +495,7 @@ class Prepaid(Reservation):
 
 
      def getPercent(self):
-         return 0.75
+            return 0.75
 
 
 
@@ -511,8 +510,9 @@ class Sixtyday(Reservation):
                       user.getEmail() != None ) )
 
 
-    def getPercent(self):
-        return 0.85
+    def getPercent(self,changed):
+            return 0.85
+
 
 
 
@@ -526,7 +526,7 @@ class Conventional(Reservation):
         return user.getCreditcard() != None
 
 
-    def getPercent(self):
+    def getPercent(self,changed):
         return 1.00
 
 
@@ -540,7 +540,7 @@ class Incentive(Reservation):
         return  user.getCreditcard() != None
 
 
-    def getPercent(self):
+    def getPercent(self,changed):
 
         percent  = 1.00
 

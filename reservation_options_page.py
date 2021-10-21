@@ -4,11 +4,11 @@ import os
 # get latest calender data
 Calender.load_calender()
 
-username = 1
+user = Customer()
 
 #query customer object with username
 user = Database.load_object("SELECT * FROM customer " +
-                            f"WHERE username = '{username}'"
+                            f"WHERE username = '{user.getUsername()}'"
                             ,Customer)[0]
 
 #query all reservations tied to customer and displays them
@@ -49,7 +49,9 @@ def generateAccomadationBill(user,reservation,totalnights):
 
 
 
-#customer selects a reservation and chooses to cancel
+#customer chooses to cancel reservation
+
+# alert user if there sure they want to cancel
 reservation = all_reservations[0]
 
 all_days = Database.load_object("SELECT * FROM day " +
@@ -68,7 +70,7 @@ elif reservation.getCheckedin():
           "Try checking out instead\n")
 
 else:
-    # alert user if there sure they want to cancel
+    #user confirms
     if reservation.getType() in 'conventional,incentive':
 
         # charge for first day only
@@ -90,7 +92,7 @@ else:
     reservation.setCheckedin(None)
     Database.save_object(reservation)
 
-    # update room avalibility
+    # old calender room space is removed
     Calender.setRooms(all_days, REMOVE=True)
     Calender.save_calender()
 
@@ -130,9 +132,12 @@ else:
         reservation.setRoomnumber(roomnumber)
         Database.save_object(reservation)
 
+
     #user is checking out
+    # alert user if there sure they want to checkout
     else:
 
+        # if user checks out early remove remaining charges
         if reservation.getType() in 'conventional,incentive':
             for day in all_days:
                 if date.today() < system_str_to_date(day.getDate()):
@@ -141,10 +146,11 @@ else:
 
             reservation.setPaydate(system_date_to_str(date.today()))
 
+        # reservation is saved
         reservation.setCheckedin(None)
         Database.save_object(reservation)
 
-        # update room avalibility
+        # old calender room space is removed
         Calender.setRooms(all_days, REMOVE=True)
         Calender.save_calender()
 

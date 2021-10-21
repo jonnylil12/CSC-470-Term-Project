@@ -2,9 +2,6 @@ from system_core import *
 import os
 import smtplib ,ssl
 
-system_remove_noshows()   # remove reservations that havent checked in and its past startdate
-system_remove_unpayed()   # remove sixtydays that havent payed and its pass grace period
-system_remove_notlefted()  # remove reservations that havent been checked out and its past enddate
 
 
 
@@ -101,6 +98,7 @@ def emails(command = '',*_):
                                                 "AND checkedin IS NOT NULL "
                                                 "AND paydate IS NULL",
                                                 Reservation)
+
             if all_unpayed != []:
                 for reservation in all_unpayed:
                     from_start_45  = system_str_to_date(reservation.getStartdate()) - timedelta(days=45)
@@ -121,7 +119,7 @@ def emails(command = '',*_):
 
                                        This is an automated email , please do not reply          
                                        """
-
+                            print(name,email)
                             with smtplib.SMTP_SSL("smtp.gmail.com", port) as server:
                                 server.login(username, password)
                                 server.sendmail(username, email, message)
@@ -148,7 +146,7 @@ def generatExpectedIncome(current,output_file):
             total_day_income = Database.query(f"SELECT sum(rate) FROM day "
                                               f"WHERE date == '{system_date_to_str(current)}'")[0][0]
 
-            total_day_income = (total_period_income if total_day_income != None else 0.00)
+            total_day_income = (total_day_income if total_day_income != None else 0.00)
 
             output_file.write(f"Date: {system_date_to_str(current)}    total income: ${total_day_income:.2f}\n")
             total_period_income += total_day_income
@@ -223,9 +221,9 @@ def generateExpectedIncentive(current,output_file):
 @contextmanager
 def generateDailyArrivals(current,output_file):
     all_results = Database.query("SELECT name, type, roomnumber, enddate " +
-                                 "FROM reservation r , customer c" +
+                                 "FROM reservation r , customer c " +
                                  f"WHERE startdate == '{system_date_to_str(current)}' " +
-                                 "AND c.ID == customer_ID"
+                                 "AND c.ID == customer_ID " +
                                  "AND checkedin == True " +
                                  "ORDER BY name ASC")
     if all_results != []:
@@ -241,9 +239,9 @@ def generateDailyArrivals(current,output_file):
 @contextmanager
 def generateDailyOccupancy(current,output_file):
     all_results = Database.query("SELECT name, roomnumber, enddate " +
-                                 "FROM reservation r , customer c" +
+                                 "FROM reservation r , customer c " +
                                  f"WHERE startdate < '{system_date_to_str(current)}' " +
-                                 "AND c.ID == customer_ID"
+                                 "AND c.ID == customer_ID " +
                                  "AND checkedin == True " +
                                  "ORDER BY roomnumber ASC")
 
@@ -282,6 +280,10 @@ def main():
         while True:
             # get latest calender data
             Calender.load_calender()
+
+            system_remove_noshows()  # remove reservations that havent checked in and its past startdate
+            system_remove_unpayed()  # remove sixtydays that havent payed and its pass grace period
+            system_remove_notlefted()  # remove reservations that havent been checked out and its past enddate
 
             args = input("HotelManagment>").split()
 
