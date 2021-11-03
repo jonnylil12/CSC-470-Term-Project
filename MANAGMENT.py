@@ -293,7 +293,7 @@ def main():
             elif args[0] == "help":
                 help()
 
-            elif args[0] == "calenders":
+            elif args[0] == "calender":
                 calenders(*args[1:])
 
             elif args[0] == "reports":
