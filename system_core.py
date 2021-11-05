@@ -1,6 +1,6 @@
 import sqlite3
 from datetime import datetime, timedelta , date
-
+from PyQt5.QtWidgets import QMessageBox
 #####################################################################################
 #################################### SYSTEM CALLS  #################################
 #######################################################################################
@@ -18,6 +18,52 @@ def system_date_range(startdate, enddate):
     while current < stop:
          yield current.strftime('%m-%d-%y')
          current += timedelta(days=1)
+
+
+def system_message(type, text):
+    msg = QMessageBox()
+    msg.setIcon(type)
+    msg.setWindowTitle('Ophelia\'s Oasis Hotel')
+    msg.setText(text)
+    if type == QMessageBox.Question:
+        msg.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+    return msg.exec_()
+
+
+
+
+
+def system_space(string, padding=None):
+        string = str(string)
+        padding = (len(string) if not padding else padding)
+        if padding > 0:
+            return string + (' ' * (26 - len(string) * 2)) + ' ' * padding
+        else:
+            return string + (' ' * (26 - len(string) * 2))[:padding]  # limit is 12 characters long
+
+
+
+def system_load_table(table,current_user):
+    table.clear()
+    all_reservations = Database.load_object("SELECT * FROM reservation " +
+                                            f"WHERE customer_ID == '{current_user.getID()}' " +
+                                            "AND checkedin IS NOT NULL"
+                                            , Reservation)
+
+    table.addItem(system_space('ID', -6) + system_space('Startdate', 4) +
+                                          system_space("Enddate", -1) + system_space('Status', -5) +
+                                          system_space('Room', -7) + system_space('Totalcost', -5))
+
+    for reservation in all_reservations:
+        string_input = system_space(reservation.getID(), -7) + \
+                       system_space(reservation.getStartdate(), 3) + \
+                       system_space(reservation.getEnddate(), -1) + \
+                       system_space(reservation.getCheckedin(), -7) + \
+                       system_space(reservation.getRoomnumber(), -6) + \
+                       '$'+system_space(reservation.getTotalFees())
+
+        table.addItem(string_input)
+
 
 
 
@@ -490,7 +536,7 @@ class Prepaid(Reservation):
 
 
      def is_valid(self,user):
-         return all ( ( system_str_to_date(self.getStartdate()) <= (date.today() - timedelta(days=90)),
+         return all ( ( system_str_to_date(self.getStartdate()) >= (date.today() + timedelta(days=90)),
                        user.getCreditcard() != None ) )
 
 
@@ -506,7 +552,7 @@ class Sixtyday(Reservation):
         super().__init__(*attributes)
 
     def is_valid(self,user):
-        return all ( ( system_str_to_date(self.getStartdate()) == (date.today() - timedelta(days=60)),
+        return all ( ( system_str_to_date(self.getStartdate()) == (date.today() + timedelta(days=60)),
                       user.getEmail() != None ) )
 
 

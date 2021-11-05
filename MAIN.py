@@ -5,7 +5,6 @@ from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from PyQt5.uic import loadUiType
 from buttonCommands import *  # files
-
 from system_core import *
 
 
@@ -25,7 +24,6 @@ class MainApp(QMainWindow, ui):
         self.setupUi(self)
         title = "Ophelia's Oasis Hotel"
         self.setWindowTitle(title)
-
 
         #home page
         Buttons.reservation_home(self)
@@ -73,6 +71,9 @@ class MainApp(QMainWindow, ui):
         date = self.calendarWidget_outdate_change.selectedDate()
         date2 = str(date.toPyDate())
         self.label_outdate_change.setText(date2)
+
+    def start(self):
+        print(True)
 
 def main():
     app = QApplication(sys.argv)

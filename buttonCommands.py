@@ -4,10 +4,11 @@ from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 
+from account_page import *
 from login_page import *
 from sign_up_page import *
 from user_page import *
-from make_reservation_page import *
+import make_reservation_page
 from change_reservation_page import *
 
 class Buttons(QMainWindow):
@@ -19,40 +20,30 @@ class Buttons(QMainWindow):
         self.btn_home.clicked.connect(lambda: self.page_holder.setCurrentWidget(self.login))
 
     def login(self):
-        self.btn_signup.clicked.connect(lambda: self.page_holder.setCurrentWidget(self.signup))
-        self.btn_login.clicked.connect(lambda: self.page_holder.setCurrentWidget(self.user))
-
-        # self.btn_login.clicked.connect(lambda: Login.load_reservations(self))
-        # self.btn_login.clicked.connect(lambda: Login.validate(self))
+        self.btn_signup.clicked.connect(lambda: Login.sign_up(self))
+        self.btn_login.clicked.connect(lambda: Login.login(self))
 
     def signup(self):
         self.btn_back_login.clicked.connect(lambda: Signup.back(self))
-        # self.btn_signup_confirm.clicked.connect(lambda: self.page_holder.setCurrentWidget(self.login))
-        self.btn_signup_confirm.clicked.connect(lambda: Signup.validate(self))
+        self.btn_signup_confirm.clicked.connect(lambda: Signup.sign_up(self))
 
     def user(self):
-        self.btn_logout.clicked.connect(lambda: self.page_holder.setCurrentWidget(self.home))
-        #self.btn_logout.clicked.connect(lambda: lambda: User.logout(self))
+        self.btn_logout.clicked.connect(lambda: User.logout(self))
+        self.btn_account.clicked.connect(lambda: User.change_info(self))
 
-        self.btn_account.clicked.connect(lambda: self.page_holder.setCurrentWidget(self.userinfo))
-        self.btn_reservation.clicked.connect(lambda: self.page_holder.setCurrentWidget(self.reservation))
-
-        self.btn_change.clicked.connect(lambda: self.page_holder.setCurrentWidget(self.change))
-        #self.btn_change.clicked.connect(lambda: Modification.change(self))
-
+        self.btn_reservation.clicked.connect(lambda: User.make_reservation(self))
+        self.btn_change.clicked.connect(lambda: User.change(self))
         self.btn_cancel.clicked.connect(lambda: User.cancel(self))
-
-        #self.btn_checkin.clicked.connect(lambda: User.checkinout(self))
+        self.btn_checkin.clicked.connect(lambda: User.checkinout(self))
 
     def reservation(self):
-        self.btn_back_user.clicked.connect(lambda: Reservation.back(self))
-        #self.btn_reservation_confirm.clicked.connect(lambda: Reservation.reserve(self))
+        self.btn_back_user.clicked.connect(lambda: make_reservation_page.Reservation.back(self))
+        self.btn_reservation_confirm.clicked.connect(lambda: make_reservation_page.Reservation.reserve(self))
 
     def change(self):
         self.btn_back_user_2.clicked.connect(lambda: Modification.back(self))
         #self.btn_change_confirm.clicked.connect(lambda: Reservation.change(self))
 
     def account(self):
-        self.btn_back_user_3.clicked.connect(lambda: self.page_holder.setCurrentWidget(self.user))
-        self.btn_modify.clicked.connect(lambda: self.page_holder.setCurrentWidget(self.user))
-        #self.btn_signup_confirm.clicked.connect(lambda: Account.change_info(self))
+        self.btn_back_user_3.clicked.connect(lambda: Account.back(self))
+        self.btn_modify_confirm.clicked.connect(lambda: Account.change_info(self))

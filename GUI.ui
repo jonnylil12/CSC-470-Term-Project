@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1488</width>
+    <width>1678</width>
     <height>832</height>
    </rect>
   </property>
@@ -548,34 +548,6 @@ QPushButton:hover
                       </property>
                      </widget>
                     </item>
-                    <item row="3" column="0">
-                     <widget class="QLabel" name="label_13">
-                      <property name="maximumSize">
-                       <size>
-                        <width>16777215</width>
-                        <height>150</height>
-                       </size>
-                      </property>
-                      <property name="font">
-                       <font>
-                        <family>Lucida Fax</family>
-                        <pointsize>17</pointsize>
-                        <weight>75</weight>
-                        <bold>true</bold>
-                       </font>
-                      </property>
-                      <property name="styleSheet">
-                       <string notr="true">	background:rgba(0,0,0,00);
-</string>
-                      </property>
-                      <property name="text">
-                       <string>Dont Have an Account with us? Create one today!</string>
-                      </property>
-                      <property name="alignment">
-                       <set>Qt::AlignCenter</set>
-                      </property>
-                     </widget>
-                    </item>
                     <item row="0" column="0">
                      <widget class="QLineEdit" name="lineEdit_username">
                       <property name="maximumSize">
@@ -604,43 +576,31 @@ border-radius: 16px;
                       </property>
                      </widget>
                     </item>
-                    <item row="1" column="0">
-                     <widget class="QLineEdit" name="lineEdit_password">
+                    <item row="3" column="0">
+                     <widget class="QLabel" name="label_13">
                       <property name="maximumSize">
                        <size>
-                        <width>600</width>
-                        <height>16777215</height>
+                        <width>16777215</width>
+                        <height>150</height>
                        </size>
                       </property>
                       <property name="font">
                        <font>
                         <family>Lucida Fax</family>
-                        <pointsize>20</pointsize>
+                        <pointsize>17</pointsize>
+                        <weight>75</weight>
+                        <bold>true</bold>
                        </font>
                       </property>
                       <property name="styleSheet">
-                       <string notr="true">color: rgb(255, 255, 255);
-border:1px solid  rgb(255, 255, 255);
-border-radius: 16px;
+                       <string notr="true">	background:rgba(0,0,0,00);
 </string>
                       </property>
-                      <property name="frame">
-                       <bool>true</bool>
-                      </property>
-                      <property name="echoMode">
-                       <enum>QLineEdit::Password</enum>
+                      <property name="text">
+                       <string>Dont Have an Account with us? Create one today!</string>
                       </property>
                       <property name="alignment">
                        <set>Qt::AlignCenter</set>
-                      </property>
-                      <property name="readOnly">
-                       <bool>false</bool>
-                      </property>
-                      <property name="placeholderText">
-                       <string>Password*</string>
-                      </property>
-                      <property name="clearButtonEnabled">
-                       <bool>false</bool>
                       </property>
                      </widget>
                     </item>
@@ -689,7 +649,47 @@ QPushButton:hover
 }</string>
                       </property>
                       <property name="text">
-                       <string>Login</string>
+                       <string>SiGN IN</string>
+                      </property>
+                     </widget>
+                    </item>
+                    <item row="1" column="0">
+                     <widget class="QLineEdit" name="lineEdit_password">
+                      <property name="maximumSize">
+                       <size>
+                        <width>600</width>
+                        <height>16777215</height>
+                       </size>
+                      </property>
+                      <property name="font">
+                       <font>
+                        <family>Lucida Fax</family>
+                        <pointsize>20</pointsize>
+                       </font>
+                      </property>
+                      <property name="styleSheet">
+                       <string notr="true">color: rgb(255, 255, 255);
+border:1px solid  rgb(255, 255, 255);
+border-radius: 16px;
+</string>
+                      </property>
+                      <property name="frame">
+                       <bool>true</bool>
+                      </property>
+                      <property name="echoMode">
+                       <enum>QLineEdit::Password</enum>
+                      </property>
+                      <property name="alignment">
+                       <set>Qt::AlignCenter</set>
+                      </property>
+                      <property name="readOnly">
+                       <bool>false</bool>
+                      </property>
+                      <property name="placeholderText">
+                       <string>Password*</string>
+                      </property>
+                      <property name="clearButtonEnabled">
+                       <bool>false</bool>
                       </property>
                      </widget>
                     </item>
@@ -1235,7 +1235,7 @@ QPushButton:hover
 }</string>
                             </property>
                             <property name="text">
-                             <string>Sign Up</string>
+                             <string>Confirm</string>
                             </property>
                            </widget>
                           </item>
@@ -1391,7 +1391,7 @@ QLineEdit
                  </font>
                 </property>
                 <property name="text">
-                 <string>User Page</string>
+                 <string>User</string>
                 </property>
                 <property name="alignment">
                  <set>Qt::AlignCenter</set>
@@ -1547,7 +1547,7 @@ QPushButton:hover
 }</string>
                             </property>
                             <property name="text">
-                             <string>Change info</string>
+                             <string>Account</string>
                             </property>
                            </widget>
                           </item>
@@ -1714,16 +1714,6 @@ border-radius: 15px;
                             <property name="sortingEnabled">
                              <bool>false</bool>
                             </property>
-                            <item>
-                             <property name="text">
-                              <string>Sept 20</string>
-                             </property>
-                            </item>
-                            <item>
-                             <property name="text">
-                              <string>April 15</string>
-                             </property>
-                            </item>
                            </widget>
                           </item>
                           <item>
@@ -1830,7 +1820,7 @@ QPushButton:hover
 }</string>
                                </property>
                                <property name="text">
-                                <string>Make reservation</string>
+                                <string>Reserve</string>
                                </property>
                               </widget>
                              </item>
@@ -2152,7 +2142,7 @@ QLineEdit
                  </font>
                 </property>
                 <property name="text">
-                 <string>Reservation Page</string>
+                 <string>Reservation</string>
                 </property>
                 <property name="alignment">
                  <set>Qt::AlignCenter</set>
@@ -2379,7 +2369,7 @@ QLineEdit
 </string>
                                   </property>
                                   <property name="text">
-                                   <string>Selected Date</string>
+                                   <string/>
                                   </property>
                                   <property name="alignment">
                                    <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
@@ -2477,7 +2467,7 @@ color: rgb(255, 255, 255);
 </string>
                                   </property>
                                   <property name="text">
-                                   <string>Selected Date</string>
+                                   <string/>
                                   </property>
                                   <property name="alignment">
                                    <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
@@ -2531,17 +2521,22 @@ color: rgb(255, 255, 255);
                             </property>
                             <item>
                              <property name="text">
-                              <string>Type of Reservation</string>
+                              <string>prepaid</string>
                              </property>
                             </item>
                             <item>
                              <property name="text">
-                              <string>type one</string>
+                              <string>sixtyday</string>
                              </property>
                             </item>
                             <item>
                              <property name="text">
-                              <string>type two</string>
+                              <string>conventional</string>
+                             </property>
+                            </item>
+                            <item>
+                             <property name="text">
+                              <string>incentive</string>
                              </property>
                             </item>
                            </widget>
@@ -2609,7 +2604,7 @@ QPushButton:hover
 }</string>
                             </property>
                             <property name="text">
-                             <string>Make reservation</string>
+                             <string>Confirm</string>
                             </property>
                            </widget>
                           </item>
@@ -2786,7 +2781,7 @@ QLineEdit
                  </font>
                 </property>
                 <property name="text">
-                 <string>Change Reservation</string>
+                 <string>Modification</string>
                 </property>
                 <property name="alignment">
                  <set>Qt::AlignCenter</set>
@@ -3184,7 +3179,7 @@ QPushButton:hover
 }</string>
                             </property>
                             <property name="text">
-                             <string>Change reservation</string>
+                             <string>Confirm</string>
                             </property>
                            </widget>
                           </item>
@@ -3340,7 +3335,7 @@ QLineEdit
                  </font>
                 </property>
                 <property name="text">
-                 <string>Modify user information</string>
+                 <string>Account</string>
                 </property>
                 <property name="alignment">
                  <set>Qt::AlignCenter</set>
@@ -3666,7 +3661,7 @@ border-radius: 16px;
                            <number>0</number>
                           </property>
                           <item>
-                           <widget class="QPushButton" name="btn_modify">
+                           <widget class="QPushButton" name="btn_modify_confirm">
                             <property name="sizePolicy">
                              <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
                               <horstretch>0</horstretch>
@@ -3710,7 +3705,7 @@ QPushButton:hover
 }</string>
                             </property>
                             <property name="text">
-                             <string>Modify</string>
+                             <string>Confirm</string>
                             </property>
                            </widget>
                           </item>
