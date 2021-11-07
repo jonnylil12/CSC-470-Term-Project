@@ -1,5 +1,188 @@
 import sqlite3
 from datetime import datetime, timedelta , date
+from PyQt5.QtWidgets import QMessageBox
+#####################################################################################
+#################################### SYSTEM CALLS  #################################
+#######################################################################################
+
+
+def system_str_to_date(string):
+    return datetime.strptime(string, '%m-%d-%y').date()
+
+def system_date_to_str(date):
+    return date.strftime('%m-%d-%y')
+
+def system_date_range(startdate, enddate):
+    current = system_str_to_date(startdate)
+    stop = system_str_to_date(enddate)
+    while current < stop:
+         yield current.strftime('%m-%d-%y')
+         current += timedelta(days=1)
+
+
+def system_message(type, text):
+    msg = QMessageBox()
+    msg.setIcon(type)
+    msg.setWindowTitle('Ophelia\'s Oasis Hotel')
+    msg.setText(text)
+    if type == QMessageBox.Question:
+        msg.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+    return msg.exec_()
+
+
+
+
+
+def system_space(string, padding=None):
+        string = str(string)
+        padding = (len(string) if not padding else padding)
+        if padding > 0:
+            return string + (' ' * (26 - len(string) * 2)) + ' ' * padding
+        else:
+            return string + (' ' * (26 - len(string) * 2))[:padding]  # limit is 12 characters long
+
+
+
+def system_load_table(table,current_user):
+    table.clear()
+    all_reservations = Database.load_object("SELECT * FROM reservation " +
+                                            f"WHERE customer_ID == '{current_user.getID()}' " +
+                                            "AND checkedin IS NOT NULL"
+                                            , Reservation)
+
+    table.addItem(system_space('ID', -6) + system_space('Startdate', 4) +
+                                          system_space("Enddate", -1) + system_space('Status', -5) +
+                                          system_space('Room', -7) + system_space('Totalcost', -5))
+
+    for reservation in all_reservations:
+        string_input = system_space(reservation.getID(), -7) + \
+                       system_space(reservation.getStartdate(), 3) + \
+                       system_space(reservation.getEnddate(), -1) + \
+                       system_space(reservation.getCheckedin(), -7) + \
+                       system_space(reservation.getRoomnumber(), -6) + \
+                       '$'+system_space(reservation.getTotalFees())
+
+        table.addItem(string_input)
+
+
+
+
+def system_remove_noshows():
+        all_no_shows = Database.load_object("SELECT * FROM reservation  " +
+                                            "WHERE checkedin == False",
+                                            Reservation)
+
+
+
+        for reservation in all_no_shows:
+
+            if date.today() > system_str_to_date(reservation.getStartdate()):
+
+                all_days = Database.load_object("SELECT * FROM day " +
+                                                f"WHERE reservation_ID = '{reservation.getID()}' " +
+                                                "ORDER BY date ASC",
+                                                Day)
+
+                # charged for first day only
+                if reservation.getType() in 'conventional,incentive':
+
+                    [Database.delete_object(day) for day in all_days[1:]]
+
+                    reservation.setTotalFees(all_days[0].getRate())
+                    reservation.setPaydate(system_date_to_str(date.today()))
+
+                # charged no show penalty
+                else:
+                    all_days[0].setRate(all_days[0].getRate() + 100.00)
+                    Database.save_object(all_days[0])
+
+                    reservation.setTotalFees(reservation.getTotalFees() + 100.00)
+
+                # cancel reservation
+                if reservation.getType() in 'conventional,incentive':
+                    reservation.setPaydate(reservation.getEnddate())
+
+                reservation.setCheckedin(None)
+                Database.save_object(reservation)
+
+                # update room avalibility
+                Calender.setRooms(all_days, REMOVE=True)
+                Calender.save_calender()
+
+
+
+def system_remove_notlefted():
+        all_not_lefted = Database.load_object("SELECT * FROM reservation " +
+                                             'WHERE checkedin == True',
+                                             Reservation)
+
+        for reservation in all_not_lefted:
+
+            if date.today() > system_str_to_date(reservation.getEnddate()):
+
+                all_days = Database.load_object("SELECT * FROM day " +
+                                                f"WHERE reservation_ID = '{reservation.getID()}' ",
+                                                Day)
+                # cancel reservation
+                if reservation.getType() in 'conventional,incentive':
+                    reservation.setPaydate(reservation.getEnddate())
+
+                reservation.setCheckedin(None)
+                Database.save_object(reservation)
+
+                # update room avalibility
+                Calender.setRooms(all_days, REMOVE=True)
+                Calender.save_calender()
+
+
+
+def system_remove_unpayed():
+        all_unpayed = Database.load_object("SELECT * FROM reservation " +
+                                            "WHERE type == 'sixtyday' " +
+                                            "AND checkedin IS NOT NULL " +
+                                            "AND paydate IS NULL",
+                                            Reservation)
+
+        for reservation in all_unpayed:
+            if date.today() > system_str_to_date(reservation.getStartdate()) - timedelta(days=30):
+
+                all_days = Database.load_object("SELECT * FROM day " +
+                                                f"WHERE reservation_ID = '{reservation.getID()}' ",
+                                                Day)
+                # cancel reservation
+                [Database.delete_object(day) for day in all_days]
+
+                reservation.setTotalFees(0)
+                reservation.setCheckedin(None)
+                Database.save_object(reservation)
+
+                # update room avalibility
+                Calender.setRooms(all_days, REMOVE=True)
+                Calender.save_calender()
+
+
+
+
+
+def system_generate_days(reservation,changed = False):
+        totalfees = 0
+        all_days = []
+        percent = (1.10 if changed else reservation.getPercent())
+        for date in system_date_range(reservation.getStartdate(),reservation.getEnddate()):
+              rate = float(format(Calender.getBaserate(date) * percent , '.2f'))
+              all_days.append(   Day(None, reservation.getID(), date, rate)  )
+              totalfees += rate
+
+        return all_days , totalfees
+
+
+
+
+
+#####################################################################################
+#################################### SYSTEM OBJECTS  #################################
+#######################################################################################
+
 
 class Database:
 
@@ -183,7 +366,8 @@ class Reservation:
         self.__totalfees , \
         self.__isCheckedin , \
         self.__roomnumber , \
-        self.__type = attributes
+        self.__type , \
+        self.__paydate = attributes
 
     def getID(self):
         return self.__ID
@@ -195,29 +379,33 @@ class Reservation:
         return self.__enddate
     def getTotalFees(self):
         return self.__totalfees
-    def isCheckedin(self):
+    def getCheckedin(self):
         return self.__isCheckedin
     def getRoomnumber(self):
         return self.__roomnumber
     def getType(self):
         return self.__type
+    def getPaydate(self):
+        return self.__paydate
 
     def setID(self,ID):
         self.__ID = ID
     def setCustomer_ID(self,customer_ID):
         self.__customer_ID = customer_ID
     def setStartdate(self,startdate):
-        self.__startdate = datetime
+        self.__startdate = startdate
     def setEnddate(self,enddate):
-        self.__enddate =  datetime
+        self.__enddate =  enddate
     def setTotalFees(self,totalfees):
         self.__totalfees = totalfees
-    def setCheckin(self,isCheckedin):
+    def setCheckedin(self, isCheckedin):
         self.__isCheckedin = isCheckedin
     def setRoomnumber(self,roomnumber):
         self.__roomnumber = roomnumber
     def setType(self,Type):
         self.__type = Type
+    def setPaydate(self, paydate):
+        self.__paydate = paydate
 
 class Day:
     """
@@ -302,7 +490,7 @@ class Calender:
           """
     __CALENDER = {}
 
-    # should only be called from the HOTEL_MANAGMENT.py
+    # should only be called from the MANAGMENT.py
     @staticmethod
     def getRooms(date):
         return Calender.__CALENDER[date][1]
@@ -317,7 +505,7 @@ class Calender:
         for day in time_period:
             Calender.__CALENDER[day.getDate()][1] += x
 
-    #should only be called from the HOTEL_MANAGMENT.py
+    #should only be called from the MANAGMENT.py
     @staticmethod
     def setBaserate(date, baserate):
         if Calender.__CALENDER.get(date,"null") == 'null':
@@ -327,12 +515,9 @@ class Calender:
 
     @staticmethod
     def rooms_are_avaliable(startdate, enddate):
-        current = datetime.strptime(startdate, '%m-%d-%y').date()
-        stop = datetime.strptime(enddate, '%m-%d-%y').date()
-        while current < stop:
-            if Calender.__CALENDER[current.strftime('%m-%d-%y')][1] == 0:
+        for date in system_date_range(startdate,enddate):
+            if Calender.__CALENDER[date][1] == 0:
                     return False
-            current += timedelta(days=1)
         return True
 
 
@@ -349,41 +534,92 @@ class Calender:
     @staticmethod
     def save_calender():
         Calender.__delete_calender()
-        for day in Calender.__CALENDER:
-            date = day
-            baserate = Calender.__CALENDER[day][0]
-            rooms = Calender.__CALENDER[day][1]
+        for date in Calender.__CALENDER:
+            baserate = Calender.__CALENDER[date][0]
+            rooms = Calender.__CALENDER[date][1]
             Database.query("INSERT INTO calender VALUES(?,?,?)", [date, baserate, rooms])
 
 
-#todo
 class Prepaid(Reservation):
+
 
      def  __init__(self,*attributes):
         super().__init__(*attributes)
 
-     def is_valid(self):
-        return Calender.rooms_are_avaliable(self.getStartdate(), self.getEnddate())
+
+     def is_valid(self,user):
+         return all ( ( system_str_to_date(self.getStartdate()) >= (date.today() + timedelta(days=90)),
+                       user.getCreditcard() != None ) )
 
 
-#todo
-class Sixty_days_in_advance(Reservation):
+     def getPercent(self):
+            return 0.75
+
+
+
+class Sixtyday(Reservation):
+
 
     def __init__(self,*attributes):
         super().__init__(*attributes)
 
+    def is_valid(self,user):
+        return all ( ( system_str_to_date(self.getStartdate()) == (date.today() + timedelta(days=60)),
+                      user.getEmail() != None ) )
 
-#todo
+
+    def getPercent(self,changed):
+            return 0.85
+
+
+
+
 class Conventional(Reservation):
 
+
     def __init__(self,*attributes):
         super().__init__(*attributes)
 
+    def is_valid(self, user):
+        return user.getCreditcard() != None
 
-#todo
+
+    def getPercent(self,changed):
+        return 1.00
+
+
+
 class Incentive(Reservation):
+
     def __init__(self,*attributes):
         super().__init__(*attributes)
+
+    def is_valid(self, user):
+        return  user.getCreditcard() != None
+
+
+    def getPercent(self,changed):
+
+        percent  = 1.00
+
+        if date.today() > system_str_to_date(self.getStartdate()) - timedelta(days = 30):
+
+            total_days = 0
+            total_period_occupancy = 0
+            for day in system_date_range(self.getStartdate(),self.getEnddate()):
+                total_day_occupancy = 45 - Calender.getRooms(day)
+                total_period_occupancy += total_day_occupancy
+                total_days += 1
+
+            average_period_occupancy = total_period_occupancy / total_days
+            occupancy_rate = average_period_occupancy / 45
+
+            if occupancy_rate <= 0.60:
+                percent = 0.80
+
+        return percent
+
+
 
 
 
