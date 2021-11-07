@@ -68,57 +68,88 @@ def system_load_table(table,current_user):
 
 
 def system_remove_noshows():
-    all_no_shows = Database.load_object("SELECT * FROM reservation  " +
-                                        f"WHERE startdate < '{system_date_to_str(date.today())}' " +
-                                        "AND checkedin == False",
-                                        Reservation)
+        all_no_shows = Database.load_object("SELECT * FROM reservation  " +
+                                            "WHERE checkedin == False",
+                                            Reservation)
 
-    if all_no_shows != []:
+
+
         for reservation in all_no_shows:
-            all_days = Database.load_object("SELECT * FROM day " +
-                                            f"WHERE reservation_ID = '{reservation.getID()}' " +
-                                            "ORDER BY date ASC",
-                                            Day)
-            penalty = 100.00
 
-            # charged for first day only
-            if reservation.getType() in 'conventional,incentive':
+            if date.today() > system_str_to_date(reservation.getStartdate()):
 
-                [Database.delete_object(day) for day in all_days[1:]]
+                all_days = Database.load_object("SELECT * FROM day " +
+                                                f"WHERE reservation_ID = '{reservation.getID()}' " +
+                                                "ORDER BY date ASC",
+                                                Day)
 
-                reservation.setTotalFees(all_days[0].getRate())
-                reservation.setPaydate(system_date_to_str(date.today()))
+                # charged for first day only
+                if reservation.getType() in 'conventional,incentive':
 
-            # charged no show penalty
-            else:
-                all_days[0].setRate(all_days[0].getRate() + penalty)
-                Database.save_object(all_days[0])
+                    [Database.delete_object(day) for day in all_days[1:]]
 
-                reservation.setTotalFees(reservation.getTotalFees() + penalty)
+                    reservation.setTotalFees(all_days[0].getRate())
+                    reservation.setPaydate(system_date_to_str(date.today()))
 
-            reservation.setCheckedin(None)
-            Database.save_object(reservation)
+                # charged no show penalty
+                else:
+                    all_days[0].setRate(all_days[0].getRate() + 100.00)
+                    Database.save_object(all_days[0])
 
-            # update room avalibility
-            Calender.setRooms(all_days, REMOVE=True)
-            Calender.save_calender()
+                    reservation.setTotalFees(reservation.getTotalFees() + 100.00)
+
+                # cancel reservation
+                if reservation.getType() in 'conventional,incentive':
+                    reservation.setPaydate(reservation.getEnddate())
+
+                reservation.setCheckedin(None)
+                Database.save_object(reservation)
+
+                # update room avalibility
+                Calender.setRooms(all_days, REMOVE=True)
+                Calender.save_calender()
+
+
+
+def system_remove_notlefted():
+        all_not_lefted = Database.load_object("SELECT * FROM reservation " +
+                                             'WHERE checkedin == True',
+                                             Reservation)
+
+        for reservation in all_not_lefted:
+
+            if date.today() > system_str_to_date(reservation.getEnddate()):
+
+                all_days = Database.load_object("SELECT * FROM day " +
+                                                f"WHERE reservation_ID = '{reservation.getID()}' ",
+                                                Day)
+                # cancel reservation
+                if reservation.getType() in 'conventional,incentive':
+                    reservation.setPaydate(reservation.getEnddate())
+
+                reservation.setCheckedin(None)
+                Database.save_object(reservation)
+
+                # update room avalibility
+                Calender.setRooms(all_days, REMOVE=True)
+                Calender.save_calender()
 
 
 
 def system_remove_unpayed():
-    all_unpayed = Database.load_object("SELECT * FROM reservation " +
-                                        "WHERE type == 'sixtyday' " +
-                                        "AND checkedin IS NOT NULL " +
-                                        "AND paydate IS NULL",
-                                        Reservation)
-    if all_unpayed != []:
-        for reservation in all_unpayed:
-            all_days = Database.load_object("SELECT * FROM day " +
-                                            f"WHERE reservation_ID = '{reservation.getID()}' ",
-                                            Day)
+        all_unpayed = Database.load_object("SELECT * FROM reservation " +
+                                            "WHERE type == 'sixtyday' " +
+                                            "AND checkedin IS NOT NULL " +
+                                            "AND paydate IS NULL",
+                                            Reservation)
 
+        for reservation in all_unpayed:
             if date.today() > system_str_to_date(reservation.getStartdate()) - timedelta(days=30):
 
+                all_days = Database.load_object("SELECT * FROM day " +
+                                                f"WHERE reservation_ID = '{reservation.getID()}' ",
+                                                Day)
+                # cancel reservation
                 [Database.delete_object(day) for day in all_days]
 
                 reservation.setTotalFees(0)
@@ -131,33 +162,14 @@ def system_remove_unpayed():
 
 
 
-def system_remove_notlefted():
-    all_not_lefted = Database.load_object("SELECT * FROM reservation " +
-                                         f"WHERE '{system_date_to_str(date.today())}' > enddate " +
-                                         'AND checkedin == True',
-                                         Reservation)
-    if all_not_lefted != []:
-        for reservation in all_not_lefted:
-            all_days = Database.load_object("SELECT * FROM day " +
-                                            f"WHERE reservation_ID = '{reservation.getID()}' ",
-                                            Day)
-
-            if reservation.getType() in 'conventional,incentive':
-                reservation.setPaydate(reservation.getEnddate())
-
-            reservation.setCheckedin(None)
-            Database.save_object(reservation)
-
-            # update room avalibility
-            Calender.setRooms(all_days, REMOVE=True)
-            Calender.save_calender()
 
 
 def system_generate_days(reservation,changed = False):
         totalfees = 0
         all_days = []
+        percent = (1.10 if changed else reservation.getPercent())
         for date in system_date_range(reservation.getStartdate(),reservation.getEnddate()):
-              rate = Calender.getBaserate(date) * (1.10 if changed else reservation.getPercent())
+              rate = float(format(Calender.getBaserate(date) * percent , '.2f'))
               all_days.append(   Day(None, reservation.getID(), date, rate)  )
               totalfees += rate
 
@@ -381,9 +393,9 @@ class Reservation:
     def setCustomer_ID(self,customer_ID):
         self.__customer_ID = customer_ID
     def setStartdate(self,startdate):
-        self.__startdate = datetime
+        self.__startdate = startdate
     def setEnddate(self,enddate):
-        self.__enddate =  datetime
+        self.__enddate =  enddate
     def setTotalFees(self,totalfees):
         self.__totalfees = totalfees
     def setCheckedin(self, isCheckedin):

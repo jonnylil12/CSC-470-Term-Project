@@ -1,9 +1,5 @@
 import os
-import sys
-from PyQt5.QtCore import *
-from PyQt5.QtGui import *
-from PyQt5.QtWidgets import *
-import make_reservation_page
+from make_reservation_page import *
 from change_reservation_page import *
 from account_page import *
 from system_core import *
@@ -70,8 +66,8 @@ class User(QMainWindow):
     def make_reservation(self):
 
         #load data for next page
-        make_reservation_page.Reservation.current_user = User.current_user
-        make_reservation_page.Reservation.table = self.listWidget_reservations
+        Reservations.current_user = User.current_user
+        Reservations.table = self.listWidget_reservations
 
         # invoke next page
         self.page_holder.setCurrentWidget(self.reservation)
@@ -81,6 +77,7 @@ class User(QMainWindow):
     def change(self):
         # load data for next page
         Modification.current_user = User.current_user
+        Modification.table = self.listWidget_reservations
 
         if (reservation := User.getSelection(self.listWidget_reservations)):
             Modification.reservation = reservation

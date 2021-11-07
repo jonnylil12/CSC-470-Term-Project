@@ -1,8 +1,5 @@
 
 import sys
-from PyQt5.QtCore import *
-from PyQt5.QtGui import *
-from PyQt5.QtWidgets import *
 from PyQt5.uic import loadUiType
 from buttonCommands import *  # files
 from system_core import *
@@ -11,8 +8,9 @@ from system_core import *
 Calender.load_calender() # get latest calender data
 
 system_remove_noshows()   # remove reservations that havent checked in and its past startdate
-system_remove_unpayed()   # remove sixtydays that havent payed and its pass grace period
 system_remove_notlefted()  # remove reservations that havent been checked out and its past enddate
+system_remove_unpayed()   # remove sixtydays that havent payed and its pass grace period
+
 
 
 

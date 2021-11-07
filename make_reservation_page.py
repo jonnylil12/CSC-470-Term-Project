@@ -1,11 +1,8 @@
-import sys
-from PyQt5.QtCore import *
-from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from system_core import *
 
 
-class Reservation(QMainWindow):
+class Reservations(QMainWindow):
 
     current_user = None
     table = None
@@ -26,14 +23,14 @@ class Reservation(QMainWindow):
 
             R = None
             if Type == 'prepaid':
-                R = Prepaid(None, Reservation.current_user.getID(), startdate, enddate, None, False, None, Type,
+                R = Prepaid(None, Reservations.current_user.getID(), startdate, enddate, None, False, None, Type,
                                                                                     system_date_to_str(date.today()))
             elif Type == 'sixtyday':
-                R = Sixtyday(None, Reservation.current_user.getID(), startdate, enddate, None, False, None, Type, None)
+                R = Sixtyday(None, Reservations.current_user.getID(), startdate, enddate, None, False, None, Type, None)
             elif Type == 'conventional':
-                R = Conventional(None, Reservation.current_user.getID(), startdate, enddate, None, False, None, Type, None)
+                R = Conventional(None, Reservations.current_user.getID(), startdate, enddate, None, False, None, Type, None)
             elif Type == 'incentive':
-                R = Incentive(None, Reservation.current_user.getID(), startdate, enddate, None, False, None, Type, None)
+                R = Incentive(None, Reservations.current_user.getID(), startdate, enddate, None, False, None, Type, None)
 
             if system_str_to_date(startdate) >= system_str_to_date(enddate):
                 system_message(QMessageBox.Warning, "Startdate must be before enddate")
@@ -44,17 +41,17 @@ class Reservation(QMainWindow):
             elif not Calender.rooms_are_avaliable(startdate, enddate):
                 system_message(QMessageBox.Warning, "Sorry but there are no rooms avaliable for that entire period")
 
-            elif not R.is_valid(Reservation.current_user):
+            elif not R.is_valid(Reservations.current_user):
                 system_message(QMessageBox.Warning, "Reservation is not valid and cannot be made")
             else:
-                Reservation.confirmMake(R)
+                Reservations.confirmMake(R)
 
 
 
     def back(self):
         self.page_holder.setCurrentWidget(self.user)
-        self.label_indate.setText('Selected Date')
-        self.label_outdate.setText('Selected Date')
+        self.label_indate.setText('')
+        self.label_outdate.setText('')
         self.comboBox_types.setCurrentIndex(0)
 
 
@@ -81,11 +78,10 @@ class Reservation(QMainWindow):
 
         # show charges
         system_message(QMessageBox.Information,"Reservation Succesfull saved\n"
-                                               f"Your total fees are ${reservation.getTotalFees():,.2f}")
+                                               f"Your total fees are ${reservation.getTotalFees()}")
 
-        system_load_table(Reservation.table,Reservation.current_user)
+        system_load_table(Reservations.table,Reservations.current_user)
 
-        # alert user of successfull creation
 
 
 

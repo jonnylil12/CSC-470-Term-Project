@@ -1,14 +1,7 @@
-import sys
-import subprocess
-from PyQt5.QtCore import *
-from PyQt5.QtGui import *
-from PyQt5.QtWidgets import *
-
-from account_page import *
 from login_page import *
 from sign_up_page import *
 from user_page import *
-import make_reservation_page
+from make_reservation_page import *
 from change_reservation_page import *
 
 class Buttons(QMainWindow):
@@ -37,12 +30,12 @@ class Buttons(QMainWindow):
         self.btn_checkin.clicked.connect(lambda: User.checkinout(self))
 
     def reservation(self):
-        self.btn_back_user.clicked.connect(lambda: make_reservation_page.Reservation.back(self))
-        self.btn_reservation_confirm.clicked.connect(lambda: make_reservation_page.Reservation.reserve(self))
+        self.btn_back_user.clicked.connect(lambda: Reservations.back(self))
+        self.btn_reservation_confirm.clicked.connect(lambda: Reservations.reserve(self))
 
     def change(self):
         self.btn_back_user_2.clicked.connect(lambda: Modification.back(self))
-        #self.btn_change_confirm.clicked.connect(lambda: Reservation.change(self))
+        self.btn_change_confirm.clicked.connect(lambda: Modification.change(self))
 
     def account(self):
         self.btn_back_user_3.clicked.connect(lambda: Account.back(self))
