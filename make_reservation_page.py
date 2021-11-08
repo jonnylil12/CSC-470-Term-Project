@@ -12,6 +12,8 @@ class Reservations(QMainWindow):
         self.setupUi(self)
 
     def reserve(self):
+        # get latest calender data
+        Calender.load_calender()
 
         Type = self.comboBox_types.currentText()
         startdate = self.label_indate.text()
@@ -39,7 +41,7 @@ class Reservations(QMainWindow):
                 system_message(QMessageBox.Warning, "You cannot make a reservation starting in the past")
 
             elif not Calender.rooms_are_avaliable(startdate, enddate):
-                system_message(QMessageBox.Warning, "Sorry but there are no rooms avaliable for that entire period")
+                system_message(QMessageBox.Warning, "Sorry but there are no rooms avaliable for that time period")
 
             elif not R.is_valid(Reservations.current_user):
                 system_message(QMessageBox.Warning, "Reservation is not valid and cannot be made")
@@ -77,7 +79,7 @@ class Reservations(QMainWindow):
         Calender.save_calender()
 
         # show charges
-        system_message(QMessageBox.Information,"Reservation Succesfull saved\n"
+        system_message(QMessageBox.Information,"Reservation succesfully saved\n"
                                                f"Your total fees are ${reservation.getTotalFees()}")
 
         system_load_table(Reservations.table,Reservations.current_user)
