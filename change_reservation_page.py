@@ -15,6 +15,8 @@ class Modification(QMainWindow):
 
 
     def change(self):
+        # get latest calender data
+        Calender.load_calender()
 
         Type = Modification.reservation.getType()
         startdate = self.label_indate_change.text()
@@ -48,7 +50,7 @@ class Modification(QMainWindow):
                 system_message(QMessageBox.Warning,"You cannot make a reservation starting in the past")
 
             elif not Calender.rooms_are_avaliable(startdate, enddate):
-                system_message(QMessageBox.Warning,"There are no rooms avaliable for that entire period")
+                system_message(QMessageBox.Warning,"There are no rooms avaliable for that time period")
 
             elif not R.is_valid(Modification.current_user):
                 system_message(QMessageBox.Warning,"Reservation is not valid and cannot be changed")
@@ -104,7 +106,7 @@ class Modification(QMainWindow):
 
 
             # show charges
-            system_message(QMessageBox.Information, "Modification Succesfull saved\n"
+            system_message(QMessageBox.Information, "Modification succesfully saved\n"
                                                     f"Your total fees are ${reservation.getTotalFees()}")
 
             system_load_table(Modification.table, Modification.current_user)

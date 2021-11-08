@@ -60,7 +60,7 @@ def system_load_table(table,current_user):
                        system_space(reservation.getEnddate(), -1) + \
                        system_space(reservation.getCheckedin(), -7) + \
                        system_space(reservation.getRoomnumber(), -6) + \
-                       '$'+system_space(reservation.getTotalFees())
+                       '$'+system_space(format(reservation.getTotalFees(),'.2f'))
 
         table.addItem(string_input)
 
@@ -568,7 +568,7 @@ class Sixtyday(Reservation):
                       user.getEmail() != None ) )
 
 
-    def getPercent(self,changed):
+    def getPercent(self):
             return 0.85
 
 
@@ -584,7 +584,7 @@ class Conventional(Reservation):
         return user.getCreditcard() != None
 
 
-    def getPercent(self,changed):
+    def getPercent(self):
         return 1.00
 
 
@@ -598,7 +598,7 @@ class Incentive(Reservation):
         return  user.getCreditcard() != None
 
 
-    def getPercent(self,changed):
+    def getPercent(self):
 
         percent  = 1.00
 

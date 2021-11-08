@@ -124,14 +124,14 @@ class User(QMainWindow):
                 if date.today() > (system_str_to_date(reservation.getStartdate()) - timedelta(days=3)):
 
                     [Database.delete_object(day) for day in all_days[1:]]
-                    User.reservation.setTotalFees(all_days[0].getRate())
-                    User.reservation.setPaydate(system_date_to_str(date.today()))
+                    reservation.setTotalFees(all_days[0].getRate())
+                    reservation.setPaydate(system_date_to_str(date.today()))
 
                 # more than 3 days from start
                 else:
 
                     [Database.delete_object(day) for day in all_days]
-                    User.reservation.setTotalFees(0)
+                    reservation.setTotalFees(0)
 
             reservation.setCheckedin(None)
             Database.save_object(reservation)
