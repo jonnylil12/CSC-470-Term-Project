@@ -3,7 +3,7 @@ Hotel reservation system for class project
 
 This is a Hotel Managment System for our class project.
 
-The HOTEL_MAIN.py and HOTEL_MANAGMENT.py are the only executable files that access
+The MAIN.py and MANAGMENT.py are the only executable files that access
 the program from two different fronts.
 
 All the pages are seperated into there own files and have there own self - enclosed functionality.
