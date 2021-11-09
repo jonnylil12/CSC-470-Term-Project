@@ -81,7 +81,8 @@ class User(QMainWindow):
         Modification.current_user = User.current_user
         Modification.table = self.listWidget_reservations
 
-        if (reservation := User.getSelection(self.listWidget_reservations)):
+        reservation = User.getSelection(self.listWidget_reservations)
+        if reservation:
             Modification.reservation = reservation
 
             # invoke next page
