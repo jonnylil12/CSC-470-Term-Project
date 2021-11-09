@@ -1,6 +1,4 @@
 # CSC-470-Term-Project
-Hotel reservation system for class project
-
 This is a Hotel Managment System for our class project.
 
 The MAIN.py and MANAGMENT.py are the only executable files that access
