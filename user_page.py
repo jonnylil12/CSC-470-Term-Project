@@ -18,7 +18,8 @@ class User(QMainWindow):
 
 
     def cancel(self):
-        if (reservation := User.getSelection(self.listWidget_reservations)):
+        reservation = User.getSelection(self.listWidget_reservations)
+        if reservation:
             all_days = Database.load_object("SELECT * FROM day " +
                                             f"WHERE reservation_ID = '{reservation.getID()}' " +
                                             "ORDER BY date ASC",
