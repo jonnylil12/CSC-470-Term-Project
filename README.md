@@ -2,7 +2,7 @@
 This is a Hotel Managment System for our class project.
 
 The MAIN.py and MANAGMENT.py are the only executable files that access
-the program from two different fronts.
+the program from two different interfaces.
 
 All the pages are seperated into there own files and have there own self - enclosed functionality.
 
@@ -12,3 +12,6 @@ To start with this project.
 
 1. pip install PyQt5.
 2. install azonix.zip
+3. pycharm and sqlitestudio are preffered IDES
+   https://www.jetbrains.com/pycharm/
+   https://sqlitestudio.pl/
