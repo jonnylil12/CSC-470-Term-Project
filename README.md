@@ -14,8 +14,9 @@ To start with this project.
 2. install azonix.zip
 3. pycharm and sqlitestudio are preffered IDES
 4. QT designer will also be needed to modify the GUI
+
    https://www.jetbrains.com/pycharm/
 
-https://sqlitestudio.pl/ 
+   https://sqlitestudio.pl/ 
 
-https://build-system.fman.io/docs/
+   https://build-system.fman.io/docs/
